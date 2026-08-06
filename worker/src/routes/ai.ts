@@ -32,18 +32,67 @@ const chatSchema = z.object({
   })).optional(),
 })
 
-async function callOpenAI(apiKey: string, messages: { role: string; content: string }[], model?: string) {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+const translateSchema = z.object({
+  text: z.string().min(1).max(8000),
+  target: z.string().min(2).max(10),
+  source: z.string().min(2).max(10).optional(),
+  context: z.string().max(500).optional(),
+})
+
+type AIMessage = { role: string; content: string }
+
+interface ResolvedProvider {
+  provider: 'deepseek' | 'openai'
+  apiKey: string
+  baseUrl: string
+  model: string
+}
+
+// Resolve the active AI provider. DeepSeek is preferred when its key is set (it's
+// an OpenAI-compatible API and much cheaper); otherwise we fall back to OpenAI.
+// Returns null when neither key is configured.
+function resolveProvider(env: Env): ResolvedProvider | null {
+  if (env.DEEPSEEK_API_KEY?.trim()) {
+    return {
+      provider: 'deepseek',
+      apiKey: env.DEEPSEEK_API_KEY.trim(),
+      baseUrl: 'https://api.deepseek.com',
+      model: 'deepseek-chat',
+    }
+  }
+  if (env.OPENAI_API_KEY?.trim()) {
+    return {
+      provider: 'openai',
+      apiKey: env.OPENAI_API_KEY.trim(),
+      baseUrl: 'https://api.openai.com/v1',
+      model: 'gpt-4o',
+    }
+  }
+  return null
+}
+
+async function callAI(
+  env: Env,
+  messages: AIMessage[],
+  options: { model?: string; temperature?: number; maxTokens?: number } = {},
+): Promise<{ content: string; provider: 'deepseek' | 'openai'; model: string }> {
+  const resolved = resolveProvider(env)
+  if (!resolved) {
+    throw new Error('No AI provider configured — set DEEPSEEK_API_KEY or OPENAI_API_KEY')
+  }
+  const { provider, apiKey, baseUrl, model } = resolved
+
+  const response = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: model || 'gpt-4o',
+      model: options.model || model,
       messages,
-      temperature: 0.7,
-      max_tokens: 4000,
+      temperature: options.temperature ?? 0.7,
+      max_tokens: options.maxTokens ?? 4000,
     }),
   })
 
@@ -53,15 +102,15 @@ async function callOpenAI(apiKey: string, messages: { role: string; content: str
       const errBody = await response.json() as { error?: { message?: string } }
       detail = errBody?.error?.message || ''
     } catch { /* ignore body parse errors */ }
-    throw new Error(`OpenAI API error: ${response.status}${detail ? ` - ${detail}` : ''}`)
+    throw new Error(`${provider} API error: ${response.status}${detail ? ` - ${detail}` : ''}`)
   }
 
   const data = await response.json() as { choices: { message: { content: string } }[] }
   const content = data.choices[0]?.message?.content || ''
   if (!content) {
-    throw new Error('OpenAI returned an empty response')
+    throw new Error(`${provider} returned an empty response`)
   }
-  return content
+  return { content, provider, model: options.model || model }
 }
 
 // Robustly extract a JSON object from an LLM response (handles markdown code fences
@@ -201,11 +250,11 @@ Return a JSON object with the following structure:
 
 Make it modern, professional, and visually appealing. Include realistic content (not lorem ipsum). Use proper color combinations and typography.`
 
-  const apiKey = c.env.OPENAI_API_KEY?.trim() || ''
+  const provider = resolveProvider(c.env)
 
   // If no AI key is configured, generate locally so the flow always completes.
-  if (!apiKey) {
-    console.warn('[generate-website] OPENAI_API_KEY is not configured — using built-in website generator.')
+  if (!provider) {
+    console.warn('[generate-website] No AI provider configured (DEEPSEEK_API_KEY/OPENAI_API_KEY) — using built-in website generator.')
     return c.json({
       data: buildFallbackWebsite(prompt),
       generated: false,
@@ -214,7 +263,7 @@ Make it modern, professional, and visually appealing. Include realistic content 
   }
 
   try {
-    const response = await callOpenAI(apiKey, [
+    const { content: response } = await callAI(c.env, [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: prompt },
     ])
@@ -256,16 +305,16 @@ ai.post('/generate-content', zValidator('json', generateContentSchema), async (c
   }
 
   try {
-    const response = await callOpenAI(c.env.OPENAI_API_KEY, [
+    const { content: generated } = await callAI(c.env, [
       { role: 'system', content: `You are a professional content writer. Write in ${language}. Be concise and engaging.` },
       { role: 'user', content: prompts[type] || prompts.paragraph },
     ])
 
     let content
     try {
-      content = JSON.parse(response)
+      content = JSON.parse(generated)
     } catch {
-      content = response
+      content = generated
     }
 
     return c.json({ content })
@@ -352,6 +401,8 @@ Pages currently in this website: ${pages}.`],
 1. Click "+ Add Section" → choose Pricing.
 2. Add plans with the "+ Add Plan" button and set name, price and features.
 3. Arrange the plans (drag to reorder) and hit Save → Preview to see the final look.`],
+    [/translate|translator|translat(e|ion)|language/i,
+      `I can translate text for you right here. Type or paste your text into the composer, pick the target language from the dropdown next to the text box, then click the Translate button — the translation appears here in the chat.`],
     [/font|typograph|heading style/i,
       `Typography tips:
 
@@ -391,7 +442,7 @@ Use the Pages sidebar to switch between pages and edit each one. Preview shows a
 
 Current pages: ${pages}.
 
-Tip: make the change in the editor, click Save, then hit Preview to see it live. Note: automatic one-click edits require an OpenAI API key — without one I give you step-by-step guidance instead.`
+Tip: make the change in the editor, click Save, then hit Preview to see it live. Note: automatic one-click edits require an AI API key (DeepSeek or OpenAI) — without one I give you step-by-step guidance instead.`
 }
 
 // AI Chat for website editing
@@ -428,11 +479,11 @@ Be concise and helpful. Focus on practical changes.`
   ]
 
   const pageTitles = pages.map((p: Record<string, unknown>) => p.title as string)
-  const apiKey = c.env.OPENAI_API_KEY?.trim() || ''
+  const provider = resolveProvider(c.env)
 
   // Without an AI key, reply with the built-in assistant so chat always works.
-  if (!apiKey) {
-    console.warn('[chat] OPENAI_API_KEY is not configured — using built-in assistant.')
+  if (!provider) {
+    console.warn('[chat] No AI provider configured (DEEPSEEK_API_KEY/OPENAI_API_KEY) — using built-in assistant.')
     return c.json({
       response: buildFallbackChatResponse(message, website.title as string, pageTitles),
       generated: false,
@@ -440,8 +491,8 @@ Be concise and helpful. Focus on practical changes.`
   }
 
   try {
-    const response = await callOpenAI(apiKey, messages)
-    return c.json({ response, generated: true })
+    const { content: response, provider: providerUsed } = await callAI(c.env, messages)
+    return c.json({ response, generated: true, provider: providerUsed })
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error)
     console.error('[chat] AI error — using built-in assistant:', detail)
@@ -452,12 +503,58 @@ Be concise and helpful. Focus on practical changes.`
   }
 })
 
+// Translate text between languages using the configured AI provider.
+ai.post('/translate', zValidator('json', translateSchema), async (c) => {
+  const { text, target, source, context } = c.req.valid('json')
+
+  const provider = resolveProvider(c.env)
+  if (!provider) {
+    console.warn('[translate] No AI provider configured — returning input unchanged.')
+    return c.json({
+      translatedText: text,
+      sourceLanguage: source || 'unknown',
+      targetLanguage: target,
+      provider: 'built-in',
+      generated: false,
+      warning: 'No AI provider configured — set DEEPSEEK_API_KEY or OPENAI_API_KEY to enable AI translation.',
+    })
+  }
+
+  const toneHint = context ? `Tone/domain: ${context}.` : ''
+  try {
+    const { content, provider: providerUsed } = await callAI(c.env, [
+      {
+        role: 'system',
+        content: `You are a professional translator. Translate the user's text into ${target}.
+Only return the translation — no explanations, no quotation marks, no notes.
+Preserve formatting such as line breaks, lists, bullet points and emojis. ${toneHint}`,
+      },
+      {
+        role: 'user',
+        content: `Source language: ${source || '(auto-detect)'}\n\nText to translate:\n${text}`,
+      },
+    ], { temperature: 0.2 })
+
+    return c.json({
+      translatedText: content.trim(),
+      sourceLanguage: source || null,
+      targetLanguage: target,
+      provider: providerUsed,
+      generated: true,
+    })
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error)
+    console.error('[translate] AI translation error:', detail)
+    return c.json({ message: `Translation failed (${detail})` }, 500)
+  }
+})
+
 // Generate color palette
 ai.post('/generate-palette', async (c) => {
   const { prompt } = await c.req.json<{ prompt: string }>()
 
   try {
-    const response = await callOpenAI(c.env.OPENAI_API_KEY, [
+    const { content } = await callAI(c.env, [
       {
         role: 'system',
         content: `Generate a color palette based on the description. Return JSON with: primary, secondary, accent, background, text, muted colors. Each color should be a hex code.`,
@@ -467,7 +564,7 @@ ai.post('/generate-palette', async (c) => {
 
     let palette
     try {
-      const jsonMatch = response.match(/\{[\s\S]*\}/)
+      const jsonMatch = content.match(/\{[\s\S]*\}/)
       palette = jsonMatch ? JSON.parse(jsonMatch[0]) : null
     } catch {
       palette = {

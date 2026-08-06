@@ -120,7 +120,7 @@ export function AIBuilderPage() {
       if (response.generated === false) {
         toast.info(
           'Built with the offline generator',
-          response.message || 'Add an OPENAI_API_KEY to .dev.vars for AI-designed pages.'
+          response.message || 'Add a DEEPSEEK_API_KEY (or OPENAI_API_KEY) to .dev.vars for AI-designed pages.'
         )
       }
 

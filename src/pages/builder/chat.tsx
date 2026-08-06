@@ -5,7 +5,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { toast } from '@/components/ui/toast'
-import { Send, Sparkles, ChevronLeft, Loader2, Bot, User } from 'lucide-react'
+import { Send, Sparkles, ChevronLeft, Loader2, Bot, User, Languages } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface Message {
   id: string
@@ -14,12 +21,33 @@ interface Message {
   timestamp: string
 }
 
+const LANGUAGES: ReadonlyArray<{ code: string; label: string }> = [
+  { code: 'es', label: 'Spanish' },
+  { code: 'fr', label: 'French' },
+  { code: 'de', label: 'German' },
+  { code: 'it', label: 'Italian' },
+  { code: 'pt', label: 'Portuguese' },
+  { code: 'nl', label: 'Dutch' },
+  { code: 'ru', label: 'Russian' },
+  { code: 'hi', label: 'Hindi' },
+  { code: 'zh', label: 'Chinese (Simplified)' },
+  { code: 'ja', label: 'Japanese' },
+  { code: 'ko', label: 'Korean' },
+  { code: 'ar', label: 'Arabic' },
+  { code: 'tr', label: 'Turkish' },
+  { code: 'id', label: 'Indonesian' },
+  { code: 'vi', label: 'Vietnamese' },
+  { code: 'th', label: 'Thai' },
+  { code: 'en', label: 'English' },
+]
+
 export function AIChatPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [targetLang, setTargetLang] = useState('es')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -67,14 +95,73 @@ export function AIChatPage() {
     }
   }
 
-  const quickActions = [
-    'Change the primary color to blue',
-    'Add a pricing section',
-    'Make the hero section bigger',
-    'Add a contact form',
-    'Enable dark mode',
-    'Improve the SEO',
+  const translateMessage = async (overrideText?: string, overrideLang?: string) => {
+    const text = (overrideText ?? input).trim()
+    if (!text || isLoading) return
+
+    const langCode = overrideLang ?? targetLang
+    const lang = LANGUAGES.find((l) => l.code === langCode)?.label || langCode
+
+    const userMessage: Message = {
+      id: `msg-${Date.now()}`,
+      role: 'user',
+      content: `[Translate to ${lang}] ${text}`,
+      timestamp: new Date().toISOString(),
+    }
+
+    setMessages((prev) => [...prev, userMessage])
+    setInput('')
+    setIsLoading(true)
+
+    try {
+      const result = await api.post<{
+        translatedText: string
+        provider?: string
+        generated?: boolean
+        warning?: string
+      }>('/ai/translate', {
+        text,
+        target: langCode,
+      })
+
+      const assistantMessage: Message = {
+        id: `msg-${Date.now()}`,
+        role: 'assistant',
+        content: result.translatedText,
+        timestamp: new Date().toISOString(),
+      }
+
+      setMessages((prev) => [...prev, assistantMessage])
+
+      if (result.generated === false) {
+        toast.info(result.warning || 'Using the built-in translator (no AI key configured)')
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to translate'
+      toast.error(/unauthorized|invalid token|401/i.test(msg) ? 'Session expired — please sign in again' : msg)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const quickActions: Array<{ label: string; mode: 'set' | 'translate'; target?: string }> = [
+    { label: 'Change the primary color to blue', mode: 'set' },
+    { label: 'Add a pricing section', mode: 'set' },
+    { label: 'Make the hero section bigger', mode: 'set' },
+    { label: 'Add a contact form', mode: 'set' },
+    { label: 'Enable dark mode', mode: 'set' },
+    { label: 'Improve the SEO', mode: 'set' },
+    { label: 'Translate a welcome message to Spanish', mode: 'translate', target: 'es' },
+    { label: 'Translate a welcome message to French', mode: 'translate', target: 'fr' },
   ]
+
+  const handleQuickAction = (action: { label: string; mode: 'set' | 'translate'; target?: string }) => {
+    if (action.mode === 'translate') {
+      translateMessage('Welcome to our website. We build modern, affordable websites for small businesses.', action.target)
+    } else {
+      setInput(action.label)
+    }
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-6rem)]">
@@ -105,16 +192,16 @@ export function AIChatPage() {
             </div>
             <h3 className="text-lg font-semibold mb-2">How can I help?</h3>
             <p className="text-muted-foreground mb-6 max-w-md">
-              Tell me what changes you'd like to make to your website
+              Ask me to edit your website, or type any text and hit Translate below
             </p>
             <div className="grid grid-cols-2 gap-2 max-w-lg">
               {quickActions.map((action) => (
                 <button
-                  key={action}
-                  onClick={() => setInput(action)}
+                  key={action.label}
+                  onClick={() => handleQuickAction(action)}
                   className="text-left p-3 rounded-lg border text-sm hover:bg-muted/50 transition-colors"
                 >
-                  {action}
+                  {action.label}
                 </button>
               ))}
             </div>
@@ -172,19 +259,42 @@ export function AIChatPage() {
             e.preventDefault()
             sendMessage()
           }}
-          className="flex gap-2"
+          className="flex flex-wrap sm:flex-nowrap gap-2"
         >
+          <Select value={targetLang} onValueChange={setTargetLang} disabled={isLoading}>
+            <SelectTrigger className="w-44 shrink-0" title="Translate to…">
+              <SelectValue placeholder="Translate to" />
+            </SelectTrigger>
+            <SelectContent>
+              {LANGUAGES.map((lang) => (
+                <SelectItem key={lang.code} value={lang.code}>
+                  {lang.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Describe the changes you want..."
+            placeholder="Describe the changes you want, or paste text to translate…"
             disabled={isLoading}
             className="flex-1"
           />
           <Button
+            type="button"
+            variant="outline"
+            disabled={isLoading || !input.trim()}
+            onClick={() => translateMessage()}
+            title="Translate the text above"
+            className="shrink-0"
+          >
+            <Languages className="w-4 h-4" />
+            <span className="hidden sm:inline ml-1">Translate</span>
+          </Button>
+          <Button
             type="submit"
             disabled={isLoading || !input.trim()}
-            className="gradient-bg text-white"
+            className="gradient-bg text-white shrink-0"
           >
             <Send className="w-4 h-4" />
           </Button>

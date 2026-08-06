@@ -26,6 +26,11 @@ npm install
 cp .env.example .env
 # Edit .env with your values
 
+# For local Worker development, copy secrets into worker/.dev.vars (gitignored):
+#   DEEPSEEK_API_KEY=sk-...
+# (or OPENAI_API_KEY=...). DeepSeek is used automatically when its key is set.
+# For production, use: wrangler secret put DEEPSEEK_API_KEY
+
 # Run development server
 npm run dev
 ```
@@ -114,7 +119,7 @@ npm run cf:deploy
 - **Backend:** Cloudflare Workers, Hono, D1, R2, KV
 - **Auth:** JWT, OAuth (Google, GitHub)
 - **Payments:** Stripe, Razorpay
-- **AI:** OpenAI API
+- **AI:** DeepSeek API (preferred) or OpenAI API — chat, translation, content & website generation
 - **Hosting:** Cloudflare Pages
 
 ## License

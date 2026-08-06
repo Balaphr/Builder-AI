@@ -5,6 +5,7 @@ export interface Env {
   JWT_SECRET: string
   OPENAI_API_KEY: string
   ANTHROPIC_API_KEY: string
+  DEEPSEEK_API_KEY: string
   STRIPE_SECRET_KEY: string
   STRIPE_WEBHOOK_SECRET: string
   RAZORPAY_KEY_ID: string
