@@ -1,0 +1,26 @@
+name = "ai-website-builder"
+main = "worker/src/index.ts"
+compatibility_date = "2024-08-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ENVIRONMENT = "development"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ai-builder-db"
+database_id = "your-database-id"
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "ai-builder-media"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "your-kv-namespace-id"
+
+[site]
+bucket = "./public"
+
+[build]
+command = "vite build"
