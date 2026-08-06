@@ -8,8 +8,8 @@ import { Sparkles, Eye, EyeOff, Mail, Lock } from 'lucide-react'
 import { toast } from '@/components/ui/toast'
 
 export function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [email, setEmail] = useState('admin@aibuilder.com')
+  const [password, setPassword] = useState('admin123')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const { login, loginWithGoogle, loginWithGitHub } = useAuth()
@@ -67,6 +67,13 @@ export function LoginPage() {
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
             </div>
+          </div>
+
+          <div className="rounded-lg border border-indigo-200/70 bg-indigo-50/70 dark:border-indigo-900 dark:bg-indigo-950/40 px-3 py-2.5 text-xs text-indigo-700 dark:text-indigo-300">
+            <p className="font-medium mb-0.5 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" /> Admin demo credentials (pre-filled)
+            </p>
+            <p>Email: admin@aibuilder.com · Password: admin123</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">

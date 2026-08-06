@@ -24,6 +24,7 @@ import { BlogPage } from '@/pages/blog'
 import { EcommercePage } from '@/pages/ecommerce'
 import { AdminPage } from '@/pages/admin'
 import { LoadingScreen } from '@/components/ui/loading'
+import { PublicSitePage } from '@/pages/public/site'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
@@ -50,6 +51,7 @@ function AppRoutes() {
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
       <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/s/:slug" element={<PublicSitePage />} />
 
       <Route
         path="/dashboard"

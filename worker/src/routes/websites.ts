@@ -175,12 +175,35 @@ websites.post('/:id/publish', async (c) => {
   const db = c.env.DB
   const id = c.req.param('id')
 
+  const existing = await db.prepare('SELECT id, slug, status FROM websites WHERE id = ?').bind(id).first()
+  if (!existing) return c.json({ message: 'Website not found' }, 404)
+
   await db
-    .prepare('UPDATE websites SET status = "published", published_at = datetime("now"), updated_at = datetime("now") WHERE id = ?')
+    .prepare(
+      'UPDATE websites SET status = "published", published_at = COALESCE(published_at, datetime("now")), updated_at = datetime("now") WHERE id = ?'
+    )
     .bind(id)
     .run()
 
-  return c.json({ message: 'Website published' })
+  const website = await db.prepare('SELECT * FROM websites WHERE id = ?').bind(id).first()
+  return c.json({ website, message: 'Website published' })
+})
+
+// Unpublish website (back to draft)
+websites.post('/:id/unpublish', async (c) => {
+  const db = c.env.DB
+  const id = c.req.param('id')
+
+  const existing = await db.prepare('SELECT id FROM websites WHERE id = ?').bind(id).first()
+  if (!existing) return c.json({ message: 'Website not found' }, 404)
+
+  await db
+    .prepare('UPDATE websites SET status = "draft", updated_at = datetime("now") WHERE id = ?')
+    .bind(id)
+    .run()
+
+  const website = await db.prepare('SELECT * FROM websites WHERE id = ?').bind(id).first()
+  return c.json({ website, message: 'Website unpublished' })
 })
 
 // Duplicate website

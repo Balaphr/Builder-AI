@@ -19,6 +19,7 @@ import { domainRoutes } from './routes/domains'
 import { billingRoutes } from './routes/billing'
 import { adminRoutes } from './routes/admin'
 import { formRoutes } from './routes/forms'
+import { publicRoutes } from './routes/public'
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -55,6 +56,7 @@ app.route('/api/domains', domainRoutes)
 app.route('/api/billing', billingRoutes)
 app.route('/api/admin', adminRoutes)
 app.route('/api/forms', formRoutes)
+app.route('/api/public', publicRoutes)
 
 // 404 handler
 app.notFound((c) => {
