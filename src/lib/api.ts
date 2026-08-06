@@ -1,4 +1,16 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787/api'
+const API_ORIGIN = API_URL.replace(/\/api\/?$/, '')
+
+/**
+ * Resolve a possibly-relative /api/… URL (as returned by the media upload
+ * endpoints) to an absolute URL on the API origin, so images render when the
+ * dashboard is served from a different port (e.g. Vite on :5173).
+ */
+export function mediaUrl(url: string): string {
+  if (!url) return url
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  return `${API_ORIGIN}${url.startsWith('/') ? '' : '/'}${url}`
+}
 
 interface RequestConfig {
   method?: string

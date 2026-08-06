@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/components/ui/toast'
-import { Globe, Plus, Trash2, CheckCircle, AlertCircle, ExternalLink } from 'lucide-react'
+import { copyToClipboard } from '@/lib/utils'
+import { Globe, Plus, Trash2, CheckCircle, AlertCircle, Copy } from 'lucide-react'
 
 export function DomainsPage() {
   const [domains, setDomains] = useState<any[]>([])
@@ -24,10 +25,22 @@ export function DomainsPage() {
       ])
       setDomains(domainsRes.domains)
       setWebsites(websitesRes.websites)
+      if (websitesRes.websites.length > 0) {
+        setWebsiteId((prev) => prev || websitesRes.websites[0].id)
+      }
     } catch (err) {
       console.error(err)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const copyDomainData = async (text: string, label: string) => {
+    try {
+      await copyToClipboard(text)
+      toast.success(`${label} copied to clipboard`)
+    } catch {
+      toast.error('Could not copy')
     }
   }
 
@@ -117,27 +130,50 @@ export function DomainsPage() {
           ) : (
             <div className="space-y-3">
               {domains.map((d) => (
-                <div key={d.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Globe className="w-5 h-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">{d.domain}</p>
-                      <p className="text-sm text-muted-foreground">{d.website_title}</p>
+                <div key={d.id} className="p-4 border rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Globe className="w-5 h-5 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{d.domain}</p>
+                        <p className="text-sm text-muted-foreground">{d.website_title}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Badge variant={d.status === 'active' ? 'success' : d.status === 'error' ? 'destructive' : 'secondary'}>
+                        {d.status === 'active' ? <CheckCircle className="w-3 h-3 mr-1" /> : <AlertCircle className="w-3 h-3 mr-1" />}
+                        {d.status}
+                      </Badge>
+                      {d.ssl ? <Badge variant="info">SSL</Badge> : null}
+                      {d.status === 'pending' && (
+                        <Button variant="outline" size="sm" onClick={() => handleVerify(d.id)}>Verify</Button>
+                      )}
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(d.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant={d.status === 'active' ? 'success' : d.status === 'error' ? 'destructive' : 'secondary'}>
-                      {d.status === 'active' ? <CheckCircle className="w-3 h-3 mr-1" /> : <AlertCircle className="w-3 h-3 mr-1" />}
-                      {d.status}
-                    </Badge>
-                    {d.ssl ? <Badge variant="info">SSL</Badge> : null}
-                    {d.status === 'pending' && (
-                      <Button variant="outline" size="sm" onClick={() => handleVerify(d.id)}>Verify</Button>
-                    )}
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(d.id)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+
+                  {d.status === 'pending' && (
+                    <div className="mt-4 rounded-md bg-muted/50 p-4">
+                      <p className="text-sm font-medium mb-3">Add this DNS record at your DNS provider:</p>
+                      <div className="flex flex-wrap items-center gap-2 text-sm">
+                        <Badge variant="secondary">A</Badge>
+                        <code className="px-2 py-1 bg-background rounded border">@{d.domain}</code>
+                        <span className="text-muted-foreground">points to</span>
+                        <code className="px-2 py-1 bg-background rounded border">192.0.2.1</code>
+                        <Button
+                          variant="ghost" size="sm" className="h-7"
+                          onClick={() => copyDomainData('192.0.2.1', 'A record value')}
+                        >
+                          <Copy className="w-3 h-3 mr-1" /> Copy
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-3">
+                        Once the record propagates, click Verify. (In this local environment verification is instant.)
+                      </p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

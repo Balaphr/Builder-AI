@@ -113,9 +113,18 @@ media.get('/file/*', async (c) => {
 // Delete file
 media.delete('/:id', async (c) => {
   const db = c.env.DB
+  const authHeader = c.req.header('Authorization')
+  if (!authHeader?.startsWith('Bearer ')) {
+    return c.json({ message: 'Unauthorized' }, 401)
+  }
+
+  const { verifyJWT } = await import('../utils')
+  const payload = verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
+  if (!payload) return c.json({ message: 'Invalid token' }, 401)
+
   const id = c.req.param('id')
 
-  const file = await db.prepare('SELECT * FROM media_files WHERE id = ?').bind(id).first()
+  const file = await db.prepare('SELECT * FROM media_files WHERE id = ? AND user_id = ?').bind(id, payload.sub).first()
   if (!file) return c.json({ message: 'File not found' }, 404)
 
   // Delete from R2

@@ -34,15 +34,20 @@ forms.post('/submit', zValidator('json', submitSchema), async (c) => {
     .all()
 
   // Process automations (send emails, webhooks, etc.)
+  const { runAutomation } = await import('../utils')
+  const executed: unknown[] = []
   for (const automation of automations) {
-    const actions = JSON.parse(automation.actions as string || '[]')
-    for (const action of actions) {
-      // Process each action type
-      console.log(`Processing automation action: ${action.type}`)
-    }
+    const result = await runAutomation(db, c.env, automation.id as string, {
+      websiteId,
+      formName,
+      data,
+      trigger: 'form_submit',
+      submittedAt: new Date().toISOString(),
+    })
+    executed.push({ automation: (automation as { name: string }).name, results: result.results })
   }
 
-  return c.json({ message: 'Form submitted', id }, 201)
+  return c.json({ message: 'Form submitted', id, automationsExecuted: executed.length }, 201)
 })
 
 // Get form submissions

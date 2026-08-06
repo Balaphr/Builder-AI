@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { api } from '@/lib/api'
+import { api, mediaUrl } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -131,14 +131,14 @@ export function MediaPage() {
           {filtered.map((file) => (
             <div key={file.id} className="group relative aspect-square rounded-xl border overflow-hidden hover:shadow-lg transition-all">
               {file.type.startsWith('image/') ? (
-                <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
+                <img src={mediaUrl(file.url)} alt={file.name} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-muted text-3xl">
                   {getFileIcon(file.type)}
                 </div>
               )}
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-white" onClick={() => window.open(file.url)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-white" onClick={() => window.open(mediaUrl(file.url))}>
                   <Eye className="w-4 h-4" />
                 </Button>
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-white" onClick={() => handleDelete(file.id)}>

@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import type { Env } from '../types'
-import { generateId, slugify } from '../utils'
+import { generateId, getUserId, slugify } from '../utils'
 
 const blog = new Hono<{ Bindings: Env }>()
 
@@ -19,6 +19,19 @@ const createPostSchema = z.object({
 })
 
 const updatePostSchema = createPostSchema.partial()
+
+async function ownsWebsite(db: Env['DB'], userId: string, websiteId: string): Promise<boolean> {
+  const row = await db.prepare('SELECT id FROM websites WHERE id = ? AND user_id = ?').bind(websiteId, userId).first()
+  return !!row
+}
+
+async function ownsPost(db: Env['DB'], userId: string, postId: string): Promise<boolean> {
+  const row = await db
+    .prepare('SELECT p.id FROM blog_posts p JOIN websites w ON p.website_id = w.id WHERE p.id = ? AND w.user_id = ?')
+    .bind(postId, userId)
+    .first()
+  return !!row
+}
 
 // List blog posts
 blog.get('/', async (c) => {
@@ -98,7 +111,14 @@ blog.get('/:idOrSlug', async (c) => {
 // Create blog post
 blog.post('/', zValidator('json', createPostSchema), async (c) => {
   const db = c.env.DB
+  const userId = getUserId(c)
+  if (!userId) return c.json({ message: 'Unauthorized' }, 401)
+
   const data = c.req.valid('json')
+
+  if (!(await ownsWebsite(db, userId, data.websiteId))) {
+    return c.json({ message: 'Website not found' }, 404)
+  }
 
   const id = generateId()
   const slug = slugify(data.title)
@@ -112,6 +132,8 @@ blog.post('/', zValidator('json', createPostSchema), async (c) => {
   if (existing) {
     return c.json({ message: 'A post with this title already exists' }, 409)
   }
+
+  const user = await db.prepare('SELECT name FROM users WHERE id = ?').bind(userId).first()
 
   await db
     .prepare(
@@ -129,8 +151,8 @@ blog.post('/', zValidator('json', createPostSchema), async (c) => {
       data.category || null,
       JSON.stringify(data.tags || []),
       data.status || 'draft',
-      data.publishedAt || null,
-      'Author'
+      data.status === 'published' ? data.publishedAt || new Date().toISOString() : data.publishedAt || null,
+      (user?.name as string) || 'Author'
     )
     .run()
 
@@ -141,8 +163,25 @@ blog.post('/', zValidator('json', createPostSchema), async (c) => {
 // Update blog post
 blog.put('/:id', zValidator('json', updatePostSchema), async (c) => {
   const db = c.env.DB
+  const userId = getUserId(c)
+  if (!userId) return c.json({ message: 'Unauthorized' }, 401)
+
   const id = c.req.param('id')
+  if (!(await ownsPost(db, userId, id))) return c.json({ message: 'Post not found' }, 404)
+
   const data = c.req.valid('json')
+
+  // Handle slug uniqueness when the title changes
+  if (data.title) {
+    const slug = slugify(data.title)
+    const existing = await db
+      .prepare('SELECT id FROM blog_posts WHERE website_id = (SELECT website_id FROM blog_posts WHERE id = ?) AND slug = ? AND id != ?')
+      .bind(id, slug, id)
+      .first()
+    if (existing) {
+      return c.json({ message: 'A post with this title already exists' }, 409)
+    }
+  }
 
   const updates: string[] = []
   const values: unknown[] = []
@@ -160,6 +199,17 @@ blog.put('/:id', zValidator('json', updatePostSchema), async (c) => {
     }
   })
 
+  // When publishing, set published_at if not already set
+  if (data.status === 'published') {
+    updates.push(`published_at = COALESCE(published_at, datetime('now'))`)
+  }
+
+  // Keep the slug in sync with the title on renames
+  if (data.title) {
+    updates.push('slug = ?')
+    values.push(slugify(data.title))
+  }
+
   updates.push('updated_at = datetime("now")')
   values.push(id)
 
@@ -172,7 +222,11 @@ blog.put('/:id', zValidator('json', updatePostSchema), async (c) => {
 // Delete blog post
 blog.delete('/:id', async (c) => {
   const db = c.env.DB
+  const userId = getUserId(c)
+  if (!userId) return c.json({ message: 'Unauthorized' }, 401)
+
   const id = c.req.param('id')
+  if (!(await ownsPost(db, userId, id))) return c.json({ message: 'Post not found' }, 404)
 
   await db.prepare('DELETE FROM blog_posts WHERE id = ?').bind(id).run()
   return c.json({ message: 'Post deleted' })
