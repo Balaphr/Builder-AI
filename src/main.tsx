@@ -23,7 +23,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <ThemeProvider defaultTheme="dark" storageKey="ai-builder-theme">
         <BrowserRouter>
           <App />
-          <Toaster richColors position="top-right" />
+          <Toaster position="top-right" />
         </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>

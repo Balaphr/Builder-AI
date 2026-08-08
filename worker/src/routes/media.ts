@@ -124,7 +124,7 @@ media.delete('/:id', async (c) => {
 
   const id = c.req.param('id')
 
-  const file = await db.prepare('SELECT * FROM media_files WHERE id = ? AND user_id = ?').bind(id, payload.sub).first()
+  const file = (await db.prepare('SELECT * FROM media_files WHERE id = ? AND user_id = ?').bind(id, payload.sub).first()) as { url: string; size: number; user_id: string; name: string } | null
   if (!file) return c.json({ message: 'File not found' }, 404)
 
   // Delete from R2

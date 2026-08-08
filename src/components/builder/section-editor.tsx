@@ -9,6 +9,7 @@ interface SectionEditorProps {
     id: string
     type: string
     data: Record<string, any>
+    styles?: Record<string, any>
   }
   onUpdate: (data: Record<string, any>) => void
   onClose: () => void

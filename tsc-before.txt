@@ -1,0 +1,18 @@
+tsconfig.node.json(8,35): error TS5096: Option 'allowImportingTsExtensions' can only be used when either 'noEmit' or 'emitDeclarationOnly' is set.
+src/components/auth-provider.tsx(55,43): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
+src/components/auth-provider.tsx(59,43): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
+src/components/builder/section-editor.tsx(169,32): error TS2339: Property 'styles' does not exist on type '{ id: string; type: string; data: Record<string, any>; }'.
+src/components/builder/section-editor.tsx(170,81): error TS2339: Property 'styles' does not exist on type '{ id: string; type: string; data: Record<string, any>; }'.
+src/components/builder/section-editor.tsx(174,32): error TS2339: Property 'styles' does not exist on type '{ id: string; type: string; data: Record<string, any>; }'.
+src/lib/api.ts(1,29): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
+src/lib/utils.ts(52,16): error TS2503: Cannot find namespace 'NodeJS'.
+src/main.tsx(26,20): error TS2322: Type '{ richColors: true; position: "top-right"; }' is not assignable to type 'IntrinsicAttributes & ToasterProps'.
+  Property 'richColors' does not exist on type 'IntrinsicAttributes & ToasterProps'.
+worker/src/routes/admin.ts(15,9): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(key: never, value: unknown): void', gave the following error.
+    Argument of type '"userId"' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(key: "secureHeadersNonce", value: string | undefined): void', gave the following error.
+    Argument of type '"userId"' is not assignable to parameter of type '"secureHeadersNonce"'.
+worker/src/types.ts(2,7): error TS2552: Cannot find name 'D1Database'. Did you mean 'IDBDatabase'?
+worker/src/types.ts(3,7): error TS2304: Cannot find name 'R2Bucket'.
+worker/src/types.ts(4,7): error TS2304: Cannot find name 'KVNamespace'.

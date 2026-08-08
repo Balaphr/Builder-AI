@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
-import type { Env } from '../types'
+import type { Env, Variables } from '../types'
 
-const admin = new Hono<{ Bindings: Env }>()
+const admin = new Hono<{ Bindings: Env; Variables: Variables }>()
 
 // Middleware to check admin role
 admin.use('*', async (c, next) => {
