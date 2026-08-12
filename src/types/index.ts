@@ -17,6 +17,8 @@ export interface Website {
   title: string
   slug: string
   description?: string
+  type?: string
+  typeConfig?: Record<string, unknown>
   templateId?: string
   status: 'draft' | 'published' | 'archived'
   customDomain?: string
@@ -107,6 +109,23 @@ export type SectionType =
   | 'products'
   | 'divider'
   | 'spacer'
+  | 'jobs'
+  | 'property'
+  | 'services'
+  | 'tools'
+  | 'files'
+  | 'orders'
+  | 'cart'
+  | 'reviews'
+  | 'ratings'
+  | 'notifications'
+  | 'search'
+  | 'social'
+  | 'ads'
+  | 'portfolio'
+  | 'events'
+  | 'calendar'
+  | 'bookings'
 
 export interface SectionData {
   [key: string]: unknown
@@ -310,6 +329,39 @@ export interface PlanLimits {
   teamMembers: number
   blogPosts: number
   products: number
+  modules: number
+}
+
+export interface WebsiteType {
+  id: string
+  name: string
+  description: string
+  icon: string
+  modules: string[]
+  defaultTemplate?: string
+  color?: string
+}
+
+export interface ModuleDefinition {
+  key: string
+  name: string
+  description: string
+  icon: string
+}
+
+export interface WebsiteTypeConfig {
+  websiteType: string
+  enabledModules: string[]
+  typeConfig?: Record<string, unknown>
+}
+
+export interface ModuleData {
+  id: string
+  websiteId: string
+  moduleKey: string
+  data: Record<string, unknown>
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Domain {

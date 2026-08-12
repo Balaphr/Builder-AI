@@ -10,6 +10,9 @@ const createWebsiteSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
   templateId: z.string().optional(),
+  type: z.string().optional(),
+  typeConfig: z.record(z.unknown()).optional(),
+  modules: z.array(z.string()).optional(),
 })
 
 const updateWebsiteSchema = z.object({
@@ -67,7 +70,7 @@ websites.post('/', zValidator('json', createWebsiteSchema), async (c) => {
   const payload = await verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
   if (!payload) return c.json({ message: 'Invalid token' }, 401)
 
-  const { title, description, templateId } = c.req.valid('json')
+  const { title, description, templateId, type, typeConfig, modules: requestedModules } = c.req.valid('json')
   const id = generateId()
   const slug = slugify(title)
 
@@ -102,28 +105,66 @@ websites.post('/', zValidator('json', createWebsiteSchema), async (c) => {
     }
   }
 
+  const websiteType = type || 'business'
+
   await db
     .prepare(
-      'INSERT INTO websites (id, user_id, title, slug, description, template_id, settings, seo, theme) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO websites (id, user_id, title, slug, description, template_id, settings, seo, theme, type, type_config) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     )
-    .bind(id, payload.sub, title, slug, description || '', templateId || null, JSON.stringify(settings), JSON.stringify(seo), JSON.stringify(theme))
+    .bind(id, payload.sub, title, slug, description || '', templateId || null, JSON.stringify(settings), JSON.stringify(seo), JSON.stringify(theme), websiteType, JSON.stringify(typeConfig || {}))
     .run()
 
+  // Enable modules for the website
+  if (Array.isArray(requestedModules) && requestedModules.length > 0) {
+    for (const moduleKey of requestedModules) {
+      const moduleId = generateId()
+      await db
+        .prepare('INSERT INTO website_modules (id, website_id, module_key, config, is_active) VALUES (?, ?, ?, ?, 1)')
+        .bind(moduleId, id, moduleKey, '{}')
+        .run()
+    }
+  }
+
   // Create default pages
-  const defaultPages = [
-    { title: 'Home', slug: 'home' },
-    { title: 'About', slug: 'about' },
-    { title: 'Contact', slug: 'contact' },
-  ]
+  const defaultPages: Array<{ title: string; slug: string }> = []
+  if (websiteType === 'landing') {
+    defaultPages.push({ title: 'Home', slug: 'home' })
+  } else {
+    defaultPages.push(
+      { title: 'Home', slug: 'home' },
+      { title: 'About', slug: 'about' },
+      { title: 'Contact', slug: 'contact' }
+    )
+  }
 
   for (let i = 0; i < defaultPages.length; i++) {
     const page = defaultPages[i]
     await db
       .prepare(
-        'INSERT INTO pages (id, website_id, title, slug, content, sort_order) VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO pages (id, website_id, title, slug, content, sort_order, is_homepage) VALUES (?, ?, ?, ?, ?, ?, ?)'
       )
-      .bind(generateId(), id, page.title, page.slug, '[]', i)
+      .bind(generateId(), id, page.title, page.slug, '[]', i, i === 0 ? 1 : 0)
       .run()
+  }
+
+  // Set homepage flag on the first page
+  // Already handled above
+
+  // Fetch and enable modules from the type config
+  const { WEBSITE_TYPES } = await import('../lib/website-types')
+  const typeDef = WEBSITE_TYPES.find((t) => t.id === websiteType)
+  if (typeDef && Array.isArray(typeDef.modules)) {
+    for (const moduleKey of typeDef.modules) {
+      try {
+        const moduleId = generateId()
+        await db
+          .prepare('INSERT OR IGNORE INTO website_modules (id, website_id, module_key, config, is_active) VALUES (?, ?, ?, ?, 1)')
+          .bind(moduleId, id, moduleKey, '{}')
+          .run()
+      } catch {
+        // Module might already be enabled
+      }
+    }
   }
 
   const website = await db.prepare('SELECT * FROM websites WHERE id = ?').bind(id).first()
@@ -228,7 +269,7 @@ websites.post('/:id/duplicate', async (c) => {
 
   await db
     .prepare(
-      'INSERT INTO websites (id, user_id, title, slug, description, template_id, settings, seo, theme) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO websites (id, user_id, title, slug, description, template_id, settings, seo, theme, type, type_config) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     )
     .bind(
       newId,
@@ -239,9 +280,26 @@ websites.post('/:id/duplicate', async (c) => {
       original.template_id,
       original.settings,
       original.seo,
-      original.theme
+      original.theme,
+      original.type || 'business',
+      original.type_config || '{}'
     )
     .run()
+
+  // Copy modules
+  const { results: modules } = await db
+    .prepare('SELECT * FROM website_modules WHERE website_id = ?')
+    .bind(id)
+    .all()
+
+  for (const module of modules) {
+    await db
+      .prepare(
+        'INSERT INTO website_modules (id, website_id, module_key, config, is_active) VALUES (?, ?, ?, ?, ?)'
+      )
+      .bind(generateId(), newId, module.module_key, module.config, module.is_active)
+      .run()
+  }
 
   // Copy pages
   const { results: pages } = await db
@@ -260,6 +318,24 @@ websites.post('/:id/duplicate', async (c) => {
 
   const website = await db.prepare('SELECT * FROM websites WHERE id = ?').bind(newId).first()
   return c.json({ website }, 201)
+})
+
+websites.get('/:id/modules', async (c) => {
+  const userId = await getUserId(c)
+  const { id } = c.req.param()
+
+  const website = await db.prepare('SELECT user_id FROM websites WHERE id = ?').bind(id).first()
+  if (!website) return c.json({ error: 'Website not found' }, 404)
+  if (website.user_id !== userId) return c.json({ error: 'Unauthorized' }, 403)
+
+  const modules = await db
+    .prepare(
+      'SELECT key FROM website_modules WHERE website_id = ? AND enabled = 1'
+    )
+    .bind(id)
+    .all()
+
+  return c.json({ modules: modules.results || [] })
 })
 
 export { websites as websiteRoutes }

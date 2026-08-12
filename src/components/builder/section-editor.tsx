@@ -126,6 +126,186 @@ export function SectionEditor({ section, onUpdate, onClose }: SectionEditorProps
           </>
         )}
 
+        {section.type === 'jobs' && (
+          <div className="space-y-4">
+            <Label>Job Listings</Label>
+            {(localData.items || []).map((item: any, i: number) => (
+              <div key={i} className="p-3 border rounded-lg space-y-2">
+                <Field label="Title" value={item.title} onChange={(v) => {
+                  const items = [...(localData.items || [])]
+                  items[i] = { ...items[i], title: v }
+                  update('items', items)
+                }} />
+                <Field label="Company" value={item.company} onChange={(v) => {
+                  const items = [...(localData.items || [])]
+                  items[i] = { ...items[i], company: v }
+                  update('items', items)
+                }} />
+                <Field label="Location" value={item.location} onChange={(v) => {
+                  const items = [...(localData.items || [])]
+                  items[i] = { ...items[i], location: v }
+                  update('items', items)
+                }} />
+                <Field label="Salary" value={item.salary} onChange={(v) => {
+                  const items = [...(localData.items || [])]
+                  items[i] = { ...items[i], salary: v }
+                  update('items', items)
+                }} />
+              </div>
+            ))}
+            <Button variant="outline" size="sm" onClick={() => {
+              update('items', [...(localData.items || []), { title: 'Job Title', company: 'Company', location: 'Location', salary: 'Salary' }])
+            }}>
+              + Add Job
+            </Button>
+          </div>
+        )}
+
+        {section.type === 'property' && (
+          <div className="space-y-4">
+            <Label>Property Listings</Label>
+            {(localData.items || []).map((item: any, i: number) => (
+              <div key={i} className="p-3 border rounded-lg space-y-2">
+                <Field label="Title" value={item.title} onChange={(v) => {
+                  const items = [...(localData.items || [])]
+                  items[i] = { ...items[i], title: v }
+                  update('items', items)
+                }} />
+                <Field label="Price" value={item.price} onChange={(v) => {
+                  const items = [...(localData.items || [])]
+                  items[i] = { ...items[i], price: v }
+                  update('items', items)
+                }} />
+                <Field label="Location" value={item.location} onChange={(v) => {
+                  const items = [...(localData.items || [])]
+                  items[i] = { ...items[i], location: v }
+                  update('items', items)
+                }} />
+                <Field label="Bedrooms" value={item.bedrooms} onChange={(v) => {
+                  const items = [...(localData.items || [])]
+                  items[i] = { ...items[i], bedrooms: v }
+                  update('items', items)
+                }} />
+              </div>
+            ))}
+            <Button variant="outline" size="sm" onClick={() => {
+              update('items', [...(localData.items || []), { title: 'Property Name', price: '$0', location: 'Location', bedrooms: '3' }])
+            }}>
+              + Add Property
+            </Button>
+          </div>
+        )}
+
+        {section.type === 'products' && (
+          <div className="space-y-4">
+            <Label>Products</Label>
+            {(localData.items || []).map((item: any, i: number) => (
+              <div key={i} className="p-3 border rounded-lg space-y-2">
+                <Field label="Name" value={item.name} onChange={(v) => {
+                  const items = [...(localData.items || [])]
+                  items[i] = { ...items[i], name: v }
+                  update('items', items)
+                }} />
+                <Field label="Price" value={item.price} onChange={(v) => {
+                  const items = [...(localData.items || [])]
+                  items[i] = { ...items[i], price: v }
+                  update('items', items)
+                }} />
+                <Field label="Category" value={item.category} onChange={(v) => {
+                  const items = [...(localData.items || [])]
+                  items[i] = { ...items[i], category: v }
+                  update('items', items)
+                }} />
+              </div>
+            ))}
+            <Button variant="outline" size="sm" onClick={() => {
+              update('items', [...(localData.items || []), { name: 'Product Name', price: '$0', category: 'Category' }])
+            }}>
+              + Add Product
+            </Button>
+          </div>
+        )}
+
+        {section.type === 'blog' && (
+          <div className="space-y-4">
+            <Label>Blog Posts</Label>
+            {(localData.items || []).map((item: any, i: number) => (
+              <div key={i} className="p-3 border rounded-lg space-y-2">
+                <Field label="Title" value={item.title} onChange={(v) => {
+                  const items = [...(localData.items || [])]
+                  items[i] = { ...items[i], title: v }
+                  update('items', items)
+                }} />
+                <Field label="Category" value={item.category} onChange={(v) => {
+                  const items = [...(localData.items || [])]
+                  items[i] = { ...items[i], category: v }
+                  update('items', items)
+                }} />
+              </div>
+            ))}
+            <Button variant="outline" size="sm" onClick={() => {
+              update('items', [...(localData.items || []), { title: 'Blog Post Title', category: 'Category' }])
+            }}>
+              + Add Post
+            </Button>
+          </div>
+        )}
+
+        {section.type === 'tools' && (
+          <div className="space-y-4">
+            <Label>AI Tools</Label>
+            {(localData.items || []).map((item: any, i: number) => (
+              <div key={i} className="p-3 border rounded-lg space-y-2">
+                <Field label="Name" value={item.name} onChange={(v) => {
+                  const items = [...(localData.items || [])]
+                  items[i] = { ...items[i], name: v }
+                  update('items', items)
+                }} />
+                <Field label="Category" value={item.category} onChange={(v) => {
+                  const items = [...(localData.items || [])]
+                  items[i] = { ...items[i], category: v }
+                  update('items', items)
+                }} />
+              </div>
+            ))}
+            <Button variant="outline" size="sm" onClick={() => {
+              update('items', [...(localData.items || []), { name: 'AI Tool Name', category: 'Category' }])
+            }}>
+              + Add Tool
+            </Button>
+          </div>
+        )}
+
+        {section.type === 'menu' && (
+          <div className="space-y-4">
+            <Label>Menu Items</Label>
+            {(localData.items || []).map((item: any, i: number) => (
+              <div key={i} className="p-3 border rounded-lg space-y-2">
+                <Field label="Name" value={item.name} onChange={(v) => {
+                  const items = [...(localData.items || [])]
+                  items[i] = { ...items[i], name: v }
+                  update('items', items)
+                }} />
+                <Field label="Price" value={item.price} onChange={(v) => {
+                  const items = [...(localData.items || [])]
+                  items[i] = { ...items[i], price: v }
+                  update('items', items)
+                }} />
+                <Field label="Category" value={item.category} onChange={(v) => {
+                  const items = [...(localData.items || [])]
+                  items[i] = { ...items[i], category: v }
+                  update('items', items)
+                }} />
+              </div>
+            ))}
+            <Button variant="outline" size="sm" onClick={() => {
+              update('items', [...(localData.items || []), { name: 'Item Name', price: '$0', category: 'Category' }])
+            }}>
+              + Add Menu Item
+            </Button>
+          </div>
+        )}
+
         {section.type === 'stats' && (
           <div className="space-y-4">
             <Label>Stats</Label>

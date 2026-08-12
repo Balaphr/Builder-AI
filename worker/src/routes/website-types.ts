@@ -1,9 +1,6 @@
 import { Hono } from 'hono'
-import { zValidator } from '@hono/zod-validator'
-import { z } from 'zod'
 import type { Env } from '../types'
-import { WEBSITE_TYPES } from '../../src/lib/website-types'
-import { getUserId } from '../utils'
+import { WEBSITE_TYPES } from '../lib/website-types'
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -52,7 +49,6 @@ app.get('/:id/templates', async (c) => {
   let query = 'SELECT * FROM templates WHERE website_type = ? OR website_type = "business"'
   const params: unknown[] = [typeId]
 
-  // If the type has a default template, include it
   if (type.defaultTemplate) {
     query += ' OR id = ?'
     params.push(type.defaultTemplate)
@@ -69,10 +65,6 @@ app.get('/:id/modules', async (c) => {
   if (!type) return c.json({ message: 'Website type not found' }, 404)
 
   return c.json({ modules: type.modules })
-})
-
-const listSchema = z.object({
-  type: z.string().optional(),
 })
 
 export { app as websiteTypeRoutes }

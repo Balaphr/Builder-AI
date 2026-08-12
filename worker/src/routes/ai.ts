@@ -143,6 +143,214 @@ function extractJsonFromResponse(text: string): Record<string, unknown> | null {
   return null
 }
 
+// Deterministic offline planner used when no AI key is configured.
+function buildFallbackPlan(prompt: string) {
+  const p = prompt.toLowerCase()
+  const type =
+    /restaurant|cafe|bakery|bistro|bar|pizza|food|hotel/.test(p) ? 'food' :
+    /ecommerce|store|shop|jewelry|product|retail/.test(p) ? 'marketplace' :
+    /portfolio|photograph|designer|artist|creative/.test(p) ? 'portfolio' :
+    /saas|software|startup|tech|app|platform/.test(p) ? 'saas' :
+    /clinic|medical|doctor|dental|hospital|health/.test(p) ? 'business' :
+    /consult|firm|lawyer|legal|agency|professional|studio/.test(p) ? 'business' :
+    /news|article|blog|journal|magazine/.test(p) ? 'blog' :
+    /job|career|employment|recruit/.test(p) ? 'jobs' :
+    /property|real.?estate|listing|realtor/.test(p) ? 'property' :
+    /service|booking|appointment/.test(p) ? 'services' :
+    /grocery|supermarket/.test(p) ? 'grocery' :
+    /file|drive|storage/.test(p) ? 'drive' :
+    /landing|page/.test(p) ? 'landing' :
+    /ai|artificial|machine|generative/.test(p) ? 'ai-tools' :
+    'business'
+
+  const title = (prompt.split(/[\n.!?]+/)[0] || '').trim().slice(0, 60) || 'My Website'
+
+  const typeConfig: Record<string, { modules: string[]; pages: { title: string; slug: string; label: string; template?: string }[] }> = {
+    business: {
+      modules: ['auth', 'blog', 'analytics'],
+      pages: [
+        { title: 'Home', slug: 'home', label: 'Home' },
+        { title: 'About', slug: 'about', label: 'About' },
+        { title: 'Services', slug: 'services', label: 'Services' },
+        { title: 'Contact', slug: 'contact', label: 'Contact' },
+      ],
+    },
+    news: {
+      modules: ['auth', 'news', 'blog', 'comments', 'analytics'],
+      pages: [
+        { title: 'Home', slug: 'home', label: 'Home' },
+        { title: 'News', slug: 'news', label: 'News' },
+        { title: 'Categories', slug: 'categories', label: 'Categories' },
+        { title: 'About', slug: 'about', label: 'About' },
+        { title: 'Contact', slug: 'contact', label: 'Contact' },
+      ],
+    },
+    marketplace: {
+      modules: ['auth', 'products', 'cart', 'orders', 'sellers', 'reviews', 'payments', 'analytics'],
+      pages: [
+        { title: 'Home', slug: 'home', label: 'Home' },
+        { title: 'Shop', slug: 'shop', label: 'Shop' },
+        { title: 'Product', slug: 'product', label: 'Product', template: 'product-detail' },
+        { title: 'Cart', slug: 'cart', label: 'Cart' },
+        { title: 'Checkout', slug: 'checkout', label: 'Checkout' },
+        { title: 'Seller Dashboard', slug: 'seller/dashboard', label: 'Seller Dashboard' },
+        { title: 'Orders', slug: 'orders', label: 'Orders' },
+        { title: 'Account', slug: 'account', label: 'My Account' },
+      ],
+    },
+    services: {
+      modules: ['auth', 'services', 'providers', 'bookings', 'reviews', 'payments', 'analytics'],
+      pages: [
+        { title: 'Home', slug: 'home', label: 'Home' },
+        { title: 'Services', slug: 'services', label: 'Services' },
+        { title: 'Providers', slug: 'providers', label: 'Providers' },
+        { title: 'Booking', slug: 'booking', label: 'Book Now' },
+        { title: 'About', slug: 'about', label: 'About' },
+        { title: 'Contact', slug: 'contact', label: 'Contact' },
+      ],
+    },
+    jobs: {
+      modules: ['auth', 'employers', 'jobs', 'candidates', 'applications', 'resumes', 'analytics'],
+      pages: [
+        { title: 'Home', slug: 'home', label: 'Home' },
+        { title: 'Jobs', slug: 'jobs', label: 'Jobs' },
+        { title: 'Companies', slug: 'companies', label: 'Companies' },
+        { title: 'Post a Job', slug: 'jobs/post', label: 'Post a Job' },
+        { title: 'My Applications', slug: 'applications', label: 'My Applications' },
+        { title: 'Employer Dashboard', slug: 'employer/dashboard', label: 'Employer Dashboard' },
+      ],
+    },
+    property: {
+      modules: ['auth', 'property', 'agents', 'listings', 'enquiries', 'analytics'],
+      pages: [
+        { title: 'Home', slug: 'home', label: 'Home' },
+        { title: 'Listings', slug: 'listings', label: 'Listings' },
+        { title: 'Property', slug: 'property', label: 'Property', template: 'property-detail' },
+        { title: 'Search', slug: 'search', label: 'Search' },
+        { title: 'Agents', slug: 'agents', label: 'Agents' },
+        { title: 'Enquire', slug: 'enquire', label: 'Enquire' },
+      ],
+    },
+    food: {
+      modules: ['auth', 'restaurants', 'menu', 'cart', 'orders', 'ratings', 'payments'],
+      pages: [
+        { title: 'Home', slug: 'home', label: 'Home' },
+        { title: 'Menu', slug: 'menu', label: 'Menu' },
+        { title: 'Restaurant', slug: 'restaurant', label: 'Our Restaurant' },
+        { title: 'Cart', slug: 'cart', label: 'Cart' },
+        { title: 'Checkout', slug: 'checkout', label: 'Checkout' },
+        { title: 'Orders', slug: 'orders', label: 'My Orders' },
+        { title: 'Account', slug: 'account', label: 'My Account' },
+      ],
+    },
+    grocery: {
+      modules: ['auth', 'products', 'cart', 'orders', 'subscriptions', 'payments', 'analytics'],
+      pages: [
+        { title: 'Home', slug: 'home', label: 'Home' },
+        { title: 'Shop', slug: 'shop', label: 'Shop' },
+        { title: 'Categories', slug: 'categories', label: 'Categories' },
+        { title: 'Cart', slug: 'cart', label: 'Cart' },
+        { title: 'Checkout', slug: 'checkout', label: 'Checkout' },
+        { title: 'My Orders', slug: 'orders', label: 'My Orders' },
+        { title: 'Subscriptions', slug: 'subscriptions', label: 'Subscriptions' },
+      ],
+    },
+    blog: {
+      modules: ['auth', 'blog', 'comments', 'newsletter', 'analytics'],
+      pages: [
+        { title: 'Home', slug: 'home', label: 'Home' },
+        { title: 'Blog', slug: 'blog', label: 'Blog' },
+        { title: 'Post', slug: 'post', label: 'Post', template: 'blog-post' },
+        { title: 'About', slug: 'about', label: 'About' },
+        { title: 'Subscribe', slug: 'subscribe', label: 'Subscribe' },
+        { title: 'Contact', slug: 'contact', label: 'Contact' },
+      ],
+    },
+    portfolio: {
+      modules: ['auth', 'portfolio', 'blog', 'contact', 'analytics'],
+      pages: [
+        { title: 'Home', slug: 'home', label: 'Home' },
+        { title: 'Work', slug: 'work', label: 'My Work' },
+        { title: 'Project', slug: 'project', label: 'Project', template: 'portfolio-project' },
+        { title: 'About', slug: 'about', label: 'About' },
+        { title: 'Blog', slug: 'blog', label: 'Blog' },
+        { title: 'Contact', slug: 'contact', label: 'Contact' },
+      ],
+    },
+    saas: {
+      modules: ['auth', 'tools', 'pricing', 'subscriptions', 'billing', 'analytics'],
+      pages: [
+        { title: 'Home', slug: 'home', label: 'Home' },
+        { title: 'Features', slug: 'features', label: 'Features' },
+        { title: 'Pricing', slug: 'pricing', label: 'Pricing' },
+        { title: 'Docs', slug: 'docs', label: 'Documentation' },
+        { title: 'Blog', slug: 'blog', label: 'Blog' },
+        { title: 'Dashboard', slug: 'dashboard', label: 'Dashboard' },
+        { title: 'Account', slug: 'account', label: 'Account' },
+      ],
+    },
+    landing: {
+      modules: ['analytics'],
+      pages: [
+        { title: 'Home', slug: 'home', label: 'Home' },
+      ],
+    },
+    drive: {
+      modules: ['auth', 'files', 'folders', 'sharing', 'starred', 'storage'],
+      pages: [
+        { title: 'Home', slug: 'home', label: 'My Drive' },
+        { title: 'Shared', slug: 'shared', label: 'Shared' },
+        { title: 'Starred', slug: 'starred', label: 'Starred' },
+        { title: 'Recent', slug: 'recent', label: 'Recent' },
+        { title: 'Account', slug: 'account', label: 'Account' },
+      ],
+    },
+    'ai-tools': {
+      modules: ['auth', 'tools', 'billing', 'subscriptions', 'ratings', 'analytics'],
+      pages: [
+        { title: 'Home', slug: 'home', label: 'Home' },
+        { title: 'Tools', slug: 'tools', label: 'AI Tools' },
+        { title: 'Tool', slug: 'tool', label: 'Tool', template: 'tool-detail' },
+        { title: 'Pricing', slug: 'pricing', label: 'Pricing' },
+        { title: 'Dashboard', slug: 'dashboard', label: 'Dashboard' },
+        { title: 'Submit', slug: 'submit', label: 'Submit Tool' },
+      ],
+    },
+    custom: {
+      modules: ['auth'],
+      pages: [
+        { title: 'Home', slug: 'home', label: 'Home' },
+        { title: 'About', slug: 'about', label: 'About' },
+        { title: 'Contact', slug: 'contact', label: 'Contact' },
+      ],
+    },
+  }
+
+  const config = typeConfig[type] || typeConfig.business
+  const theme = {
+    primaryColor: '#6366f1',
+    secondaryColor: '#8b5cf6',
+    accentColor: '#ec4899',
+    fontFamily: 'Inter',
+    borderRadius: '0.5rem',
+    mode: 'light',
+  }
+
+  return {
+    websiteType: type,
+    title,
+    description: prompt,
+    modules: config.modules,
+    pages: config.pages,
+    theme,
+    seo: {
+      metaTitle: `${title} | Official Website`,
+      metaDescription: prompt.slice(0, 160),
+      keywords: [type, 'website', 'platform'],
+    },
+  }
+}
+
 // Deterministic offline generator used when no AI key is configured or the AI
 // provider fails. Produces a valid website structure so generation always succeeds.
 function buildFallbackWebsite(prompt: string) {
@@ -155,6 +363,32 @@ function buildFallbackWebsite(prompt: string) {
     /clinic|medical|doctor|dental|hospital|health/.test(p) ? 'medical' :
     /consult|firm|lawyer|legal|agency|professional|studio/.test(p) ? 'professional' :
     'business'
+
+  const websiteType =
+    /restaurant|cafe|bakery|bistro|bar|pizza|food/.test(p) ? 'food' :
+    /ecommerce|store|shop|jewelry|jewellery|product|retail/.test(p) ? 'marketplace' :
+    /portfolio|photograph|designer|artist|creative/.test(p) ? 'portfolio' :
+    /saas|software|startup|tech|app|platform/.test(p) ? 'saas' :
+    /news|article|blog|journal/.test(p) ? 'blog' :
+    /job|career|employment/.test(p) ? 'jobs' :
+    /property|real.?estate/.test(p) ? 'property' :
+    'business'
+
+  const modules = websiteType === 'food'
+    ? ['auth', 'restaurants', 'menu', 'cart', 'orders', 'ratings', 'payments']
+    : websiteType === 'marketplace'
+    ? ['auth', 'products', 'cart', 'orders', 'sellers', 'reviews', 'payments', 'analytics']
+    : websiteType === 'portfolio'
+    ? ['auth', 'portfolio', 'blog', 'contact', 'analytics']
+    : websiteType === 'saas'
+    ? ['auth', 'tools', 'pricing', 'subscriptions', 'billing', 'analytics']
+    : websiteType === 'blog'
+    ? ['auth', 'blog', 'comments', 'newsletter', 'analytics']
+    : websiteType === 'jobs'
+    ? ['auth', 'employers', 'jobs', 'candidates', 'applications', 'resumes', 'analytics']
+    : websiteType === 'property'
+    ? ['auth', 'property', 'agents', 'listings', 'enquiries', 'analytics']
+    : ['auth', 'blog', 'analytics']
 
   const title = (prompt.split(/[\n.!?]+/)[0] || '').trim().slice(0, 60) || 'My Website'
 
@@ -200,8 +434,10 @@ function buildFallbackWebsite(prompt: string) {
   ]
 
   return {
+    websiteType,
     title,
     description: prompt,
+    modules,
     pages,
     theme: {
       primaryColor: '#6366f1',

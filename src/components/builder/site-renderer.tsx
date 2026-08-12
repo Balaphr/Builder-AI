@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { HardDrive } from 'lucide-react'
 
 export interface RenderPage {
   id: string
@@ -343,6 +344,175 @@ function SectionRenderer({ section, theme }: { section: SiteSection; theme: Site
 
     case 'spacer':
       return <div style={{ height: typeof data.height === 'number' ? data.height : data.height || 64, backgroundColor: bg }} />
+
+    case 'jobs': {
+      const items = listOf(data.items, [])
+      return (
+        <div className="py-16 px-6" style={{ backgroundColor: bg }}>
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-3xl font-bold text-center mb-10" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.heading || 'Job Openings'}</h2>
+            <div className="space-y-4">
+              {items.map((item: any, i: number) => (
+                <div key={i} className="border border-slate-200 rounded-xl p-6 bg-white">
+                  <div className="flex justify-between items-start">
+                    <h3 className="font-semibold text-lg">{item.title}</h3>
+                    <span className="text-sm font-medium" style={{ color: primary }}>{item.salary}</span>
+                  </div>
+                  <p className="text-slate-600 mt-1">{item.company} • {item.location}</p>
+                </div>
+              ))}
+              {items.length === 0 && <div className="text-center text-slate-400">No job listings yet — add them in the editor</div>}
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    case 'property': {
+      const items = listOf(data.items, [])
+      return (
+        <div className="py-16 px-6" style={{ backgroundColor: bg }}>
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-3xl font-bold text-center mb-10" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.heading || 'Properties'}</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {items.map((item: any, i: number) => (
+                <div key={i} className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                  {item.image ? <img src={item.image} alt={item.title} className="w-full h-48 object-cover" /> : <div className="aspect-video bg-slate-100 flex items-center justify-center text-slate-400">Property Image</div>}
+                  <div className="p-4">
+                    <h3 className="font-semibold text-lg">{item.title}</h3>
+                    <p className="text-slate-600 mt-1">{item.location}</p>
+                    <p className="font-bold mt-2" style={{ color: primary }}>{item.price}</p>
+                  </div>
+                </div>
+              ))}
+              {items.length === 0 && <div className="col-span-full text-center text-slate-400">No properties listed — add them in the editor</div>}
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    case 'products': {
+      const items = listOf(data.items, [])
+      return (
+        <div className="py-16 px-6" style={{ backgroundColor: bg }}>
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-3xl font-bold text-center mb-10" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.heading || 'Products'}</h2>
+            <div className="grid md:grid-cols-3 gap-6">
+              {items.map((item: any, i: number) => (
+                <div key={i} className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                  {item.image ? <img src={item.image} alt={item.name} className="w-full h-48 object-cover" /> : <div className="aspect-video bg-slate-100 flex items-center justify-center text-slate-400">Product Image</div>}
+                  <div className="p-4">
+                    <h3 className="font-semibold">{item.name}</h3>
+                    <p className="text-sm text-slate-500">{item.category}</p>
+                    <p className="font-bold mt-2" style={{ color: primary }}>{item.price}</p>
+                  </div>
+                </div>
+              ))}
+              {items.length === 0 && <div className="col-span-3 text-center text-slate-400">No products listed — add them in the editor</div>}
+            </div>
+            {data.cartText && <div className="text-center mt-8">{button(theme, data.cartText || 'View Cart', data.cartLink || '/cart')}</div>}
+          </div>
+        </div>
+      )
+    }
+
+    case 'blog': {
+      const items = listOf(data.posts || data.items, [])
+      return (
+        <div className="py-16 px-6" style={{ backgroundColor: bg }}>
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-3xl font-bold text-center mb-10" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.heading || 'Latest Posts'}</h2>
+            <div className="space-y-8">
+              {items.map((item: any, i: number) => (
+                <article key={i}>
+                  {item.image ? <img src={item.image} alt={item.title} className="w-full h-48 object-cover rounded-xl mb-3" /> : null}
+                  <h3 className="font-bold text-xl" style={{ color: primary }}>{item.title}</h3>
+                  {item.excerpt && <p className="text-slate-600 mt-2">{item.excerpt}</p>}
+                  <p className="text-sm text-slate-400 mt-2">{new Date(item.publishedAt || item.date || '').toLocaleDateString()}</p>
+                </article>
+              ))}
+              {items.length === 0 && <div className="text-center text-slate-400">No blog posts yet — add them in the editor</div>}
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    case 'tools': {
+      const items = listOf(data.items, [])
+      return (
+        <div className="py-16 px-6" style={{ backgroundColor: bg }}>
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-3xl font-bold text-center mb-10" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.heading || 'AI Tools'}</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {items.map((item: any, i: number) => (
+                <div key={i} className="border border-slate-200 rounded-xl p-5 bg-white hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${primary}10` }}>
+                      <span style={{ color: primary }}>AI</span>
+                    </div>
+                    <h3 className="font-semibold">{item.name}</h3>
+                  </div>
+                  <p className="text-sm text-slate-600 mb-3">{item.description}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium" style={{ color: secondary }}>{item.category}</span>
+                    {button(theme, 'Try Now', item.link || '#')}
+                  </div>
+                </div>
+              ))}
+              {items.length === 0 && <div className="col-span-3 text-center text-slate-400">No Ai tools listed — add them in the editor</div>}
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    case 'cart':
+      return (
+        <div className="py-16 px-6" style={{ backgroundColor: bg }}>
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-bold mb-6" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.title || 'Your Cart'}</h2>
+            <div className="text-center py-16 text-slate-400">Your cart is empty</div>
+          </div>
+        </div>
+      )
+
+    case 'orders': {
+      const items = listOf(data.items || [], [])
+      return (
+        <div className="py-16 px-6" style={{ backgroundColor: bg }}>
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-bold mb-6" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.title || 'Order History'}</h2>
+            <div className="space-y-4">
+              {items.map((item: any, i: number) => (
+                <div key={i} className="border border-slate-200 rounded-xl p-4 bg-white">
+                  <div className="flex justify-between">
+                    <span className="font-medium">Order #{item.id || i + 1}</span>
+                    <span className="text-sm" style={{ color: primary }}>{item.status}</span>
+                  </div>
+                  <p className="text-sm text-slate-600 mt-1">{item.total}</p>
+                </div>
+              ))}
+              {items.length === 0 && <div className="text-center py-12 text-slate-400">No orders yet</div>}
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    case 'files':
+      return (
+        <div className="py-16 px-6" style={{ backgroundColor: bg }}>
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-bold mb-6" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.title || 'My Files'}</h2>
+            <div className="text-center py-16 text-slate-400">
+              <HardDrive className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p>No files uploaded</p>
+            </div>
+          </div>
+        </div>
+      )
 
     default:
       return (

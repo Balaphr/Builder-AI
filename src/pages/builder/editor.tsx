@@ -43,6 +43,7 @@ export function BuilderEditor() {
   const [device, setDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [enabledModules, setEnabledModules] = useState<string[]>([])
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -57,6 +58,14 @@ export function BuilderEditor() {
     try {
       const { website: site } = await api.get<{ website: any }>(`/websites/${id}`)
       setWebsite(site)
+      if (site?.type) {
+        try {
+          const { modules } = await api.get<{ modules: { key: string }[] }>(`/websites/${id}/modules`)
+          setEnabledModules(modules.map((m) => m.key))
+        } catch {
+          setEnabledModules(site.typeConfig?.modules || [])
+        }
+      }
 
       const { pages: p } = await api.get<{ pages: Page[] }>(`/pages?websiteId=${id}`)
       setPages(p)
@@ -318,6 +327,7 @@ export function BuilderEditor() {
         <SectionPicker
           onSelect={addSection}
           onClose={() => setShowSectionPicker(false)}
+          enabledModules={enabledModules}
         />
       )}
     </div>

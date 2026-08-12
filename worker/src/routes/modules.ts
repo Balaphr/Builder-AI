@@ -3,7 +3,7 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import type { Env } from '../types'
 import { generateId, getUserId } from '../utils'
-import { MODULE_DEFINITIONS } from '../../src/lib/website-types'
+import { MODULE_DEFINITIONS } from '../lib/website-types'
 
 const app = new Hono<{ Bindings: Env }>()
 
