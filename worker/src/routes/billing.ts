@@ -37,7 +37,7 @@ billing.get('/subscription', async (c) => {
   if (!authHeader?.startsWith('Bearer ')) return c.json({ message: 'Unauthorized' }, 401)
 
   const { verifyJWT } = await import('../utils')
-  const payload = verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
+  const payload = await verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
   if (!payload) return c.json({ message: 'Invalid token' }, 401)
 
   const subscription = await db

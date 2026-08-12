@@ -111,7 +111,7 @@ blog.get('/:idOrSlug', async (c) => {
 // Create blog post
 blog.post('/', zValidator('json', createPostSchema), async (c) => {
   const db = c.env.DB
-  const userId = getUserId(c)
+  const userId = await getUserId(c)
   if (!userId) return c.json({ message: 'Unauthorized' }, 401)
 
   const data = c.req.valid('json')
@@ -163,7 +163,7 @@ blog.post('/', zValidator('json', createPostSchema), async (c) => {
 // Update blog post
 blog.put('/:id', zValidator('json', updatePostSchema), async (c) => {
   const db = c.env.DB
-  const userId = getUserId(c)
+  const userId = await getUserId(c)
   if (!userId) return c.json({ message: 'Unauthorized' }, 401)
 
   const id = c.req.param('id')
@@ -222,7 +222,7 @@ blog.put('/:id', zValidator('json', updatePostSchema), async (c) => {
 // Delete blog post
 blog.delete('/:id', async (c) => {
   const db = c.env.DB
-  const userId = getUserId(c)
+  const userId = await getUserId(c)
   if (!userId) return c.json({ message: 'Unauthorized' }, 401)
 
   const id = c.req.param('id')

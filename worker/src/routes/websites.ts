@@ -32,7 +32,7 @@ websites.get('/', async (c) => {
   }
 
   const { verifyJWT } = await import('../utils')
-  const payload = verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
+  const payload = await verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
   if (!payload) return c.json({ message: 'Invalid token' }, 401)
 
   const { results } = await db
@@ -64,7 +64,7 @@ websites.post('/', zValidator('json', createWebsiteSchema), async (c) => {
   }
 
   const { verifyJWT } = await import('../utils')
-  const payload = verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
+  const payload = await verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
   if (!payload) return c.json({ message: 'Invalid token' }, 401)
 
   const { title, description, templateId } = c.req.valid('json')
@@ -217,7 +217,7 @@ websites.post('/:id/duplicate', async (c) => {
   }
 
   const { verifyJWT } = await import('../utils')
-  const payload = verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
+  const payload = await verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
   if (!payload) return c.json({ message: 'Invalid token' }, 401)
 
   const original = await db.prepare('SELECT * FROM websites WHERE id = ?').bind(id).first()

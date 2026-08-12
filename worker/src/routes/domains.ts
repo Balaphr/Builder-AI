@@ -38,7 +38,7 @@ async function ownsWebsite(db: Env['DB'], userId: string, websiteId: string): Pr
 
 // List domains for the current user's websites
 domains.get('/', async (c) => {
-  const userId = getUserId(c)
+  const userId = await getUserId(c)
   if (!userId) return c.json({ message: 'Unauthorized' }, 401)
 
   const { results } = await c.env.DB.prepare(
@@ -51,7 +51,7 @@ domains.get('/', async (c) => {
 
 // Add a custom domain
 domains.post('/', zValidator('json', addDomainSchema), async (c) => {
-  const userId = getUserId(c)
+  const userId = await getUserId(c)
   if (!userId) return c.json({ message: 'Unauthorized' }, 401)
 
   const db = c.env.DB
@@ -77,7 +77,7 @@ domains.post('/', zValidator('json', addDomainSchema), async (c) => {
 
 // Rename a domain
 domains.put('/:id', zValidator('json', updateDomainSchema), async (c) => {
-  const userId = getUserId(c)
+  const userId = await getUserId(c)
   if (!userId) return c.json({ message: 'Unauthorized' }, 401)
 
   const db = c.env.DB
@@ -103,7 +103,7 @@ domains.put('/:id', zValidator('json', updateDomainSchema), async (c) => {
 
 // Remove a domain
 domains.delete('/:id', async (c) => {
-  const userId = getUserId(c)
+  const userId = await getUserId(c)
   if (!userId) return c.json({ message: 'Unauthorized' }, 401)
 
   const db = c.env.DB
@@ -127,7 +127,7 @@ domains.delete('/:id', async (c) => {
 
 // Verify a domain (in production this would check DNS records)
 domains.post('/:id/verify', async (c) => {
-  const userId = getUserId(c)
+  const userId = await getUserId(c)
   if (!userId) return c.json({ message: 'Unauthorized' }, 401)
 
   const db = c.env.DB

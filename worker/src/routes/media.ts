@@ -14,7 +14,7 @@ media.get('/', async (c) => {
   }
 
   const { verifyJWT } = await import('../utils')
-  const payload = verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
+  const payload = await verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
   if (!payload) return c.json({ message: 'Invalid token' }, 401)
 
   const folder = c.req.query('folder') || '/'
@@ -48,7 +48,7 @@ media.post('/upload', async (c) => {
   }
 
   const { verifyJWT } = await import('../utils')
-  const payload = verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
+  const payload = await verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
   if (!payload) return c.json({ message: 'Invalid token' }, 401)
 
   const formData = await c.req.formData()
@@ -119,7 +119,7 @@ media.delete('/:id', async (c) => {
   }
 
   const { verifyJWT } = await import('../utils')
-  const payload = verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
+  const payload = await verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
   if (!payload) return c.json({ message: 'Invalid token' }, 401)
 
   const id = c.req.param('id')
@@ -153,7 +153,7 @@ media.post('/folder', async (c) => {
   }
 
   const { verifyJWT } = await import('../utils')
-  const payload = verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
+  const payload = await verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
   if (!payload) return c.json({ message: 'Invalid token' }, 401)
 
   const { name, parentId } = await c.req.json<{ name: string; parentId?: string }>()

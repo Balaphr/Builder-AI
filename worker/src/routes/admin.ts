@@ -9,7 +9,7 @@ admin.use('*', async (c, next) => {
   if (!authHeader?.startsWith('Bearer ')) return c.json({ message: 'Unauthorized' }, 401)
 
   const { verifyJWT } = await import('../utils')
-  const payload = verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
+  const payload = await verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
   if (!payload || payload.role !== 'admin') return c.json({ message: 'Forbidden' }, 403)
 
   c.set('userId', payload.sub as string)

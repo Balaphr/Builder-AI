@@ -13,26 +13,39 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return passwordHash === hash
 }
 
-export function generateJWT(payload: Record<string, unknown>, secret: string): string {
+export async function generateJWT(payload: Record<string, unknown>, secret: string): Promise<string> {
   const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
   const body = btoa(JSON.stringify({ ...payload, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 }))
 
+  const data = `${header}.${body}`
   const encoder = new TextEncoder()
-  const key = crypto.subtle.importKey(
-    'raw',
-    encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  )
+  const secretBytes = encoder.encode(secret)
+  const dataBytes = encoder.encode(data)
 
-  // For simplicity, using a basic implementation
-  return `${header}.${body}.signature`
+  const key = await crypto.subtle.importKey('raw', secretBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+  const sig = await crypto.subtle.sign('HMAC', key, dataBytes)
+  const signature = btoa(String.fromCharCode(...new Uint8Array(sig)))
+
+  return `${header}.${body}.${signature}`
 }
 
-export function verifyJWT(token: string, secret: string): Record<string, unknown> | null {
+export async function verifyJWT(token: string, secret: string): Promise<Record<string, unknown> | null> {
   try {
-    const [, body] = token.split('.')
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+
+    const [header, body, signature] = parts
+
+    const encoder = new TextEncoder()
+    const secretBytes = encoder.encode(secret)
+    const dataBytes = encoder.encode(`${header}.${body}`)
+
+    const key = await crypto.subtle.importKey('raw', secretBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['verify'])
+    const sigBytes = Uint8Array.from(atob(signature), c => c.charCodeAt(0))
+    const isValid = await crypto.subtle.verify('HMAC', key, sigBytes, dataBytes)
+
+    if (!isValid) return null
+
     const payload = JSON.parse(atob(body))
 
     if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
@@ -53,13 +66,13 @@ export function generateId(): string {
  * Extract the authenticated user id from the Authorization header.
  * Returns null when the header is missing or the token is invalid/expired.
  */
-export function getUserId(
+export async function getUserId(
   c: { env: Env; req: { header(name: string): string | undefined } }
-): string | null {
+): Promise<string | null> {
   const authHeader = c.req.header('Authorization')
   if (!authHeader?.startsWith('Bearer ')) return null
 
-  const payload = verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
+  const payload = await verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
   if (!payload) return null
 
   return typeof payload.sub === 'string' ? payload.sub : null

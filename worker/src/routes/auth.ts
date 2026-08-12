@@ -45,7 +45,7 @@ auth.post('/register', zValidator('json', registerSchema), async (c) => {
     .bind(id, email, name, passwordHash, 'user', 'free', 100)
     .run()
 
-  const token = generateJWT({ sub: id, email, name, role: 'user', plan: 'free' }, c.env.JWT_SECRET)
+  const token = await generateJWT({ sub: id, email, name, role: 'user', plan: 'free' }, c.env.JWT_SECRET)
 
   return c.json({
     user: { id, email, name, role: 'user', plan: 'free', aiCredits: 100, storageUsed: 0 },
@@ -78,7 +78,7 @@ auth.post('/login', zValidator('json', loginSchema), async (c) => {
     .bind(user.id)
     .run()
 
-  const token = generateJWT(
+  const token = await generateJWT(
     {
       sub: user.id,
       email: user.email,
@@ -145,7 +145,7 @@ auth.post('/otp/verify', zValidator('json', verifyOtpSchema), async (c) => {
     .bind(user.id)
     .run()
 
-  const token = generateJWT(
+  const token = await generateJWT(
     {
       sub: user.id,
       email: user.email,
@@ -224,7 +224,7 @@ auth.get('/google/callback', async (c) => {
     }
   }
 
-  const token = generateJWT(
+  const token = await generateJWT(
     {
       sub: user!.id,
       email: user!.email,
@@ -297,7 +297,7 @@ auth.get('/github/callback', async (c) => {
     }
   }
 
-  const token = generateJWT(
+  const token = await generateJWT(
     {
       sub: user!.id,
       email: user!.email,
@@ -319,7 +319,7 @@ auth.get('/me', async (c) => {
 
   const token = authHeader.split(' ')[1]
   const { verifyJWT } = await import('../utils')
-  const payload = verifyJWT(token, c.env.JWT_SECRET)
+  const payload = await verifyJWT(token, c.env.JWT_SECRET)
 
   if (!payload) {
     return c.json({ message: 'Invalid token' }, 401)

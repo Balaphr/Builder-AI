@@ -9,6 +9,12 @@ const ai = new Hono<{ Bindings: Env }>()
 const generateWebsiteSchema = z.object({
   prompt: z.string().min(10),
   templateId: z.string().optional(),
+  websiteType: z.string().optional(),
+  modules: z.array(z.string()).optional(),
+})
+
+const generatePlanSchema = z.object({
+  prompt: z.string().min(10),
 })
 
 const generateContentSchema = z.object({
@@ -211,6 +217,104 @@ function buildFallbackWebsite(prompt: string) {
     },
   }
 }
+
+// Generate a structured plan from a prompt (two-stage AI)
+ai.post('/generate-plan', zValidator('json', generatePlanSchema), async (c) => {
+  const { prompt } = c.req.valid('json')
+
+  const systemPrompt = `You are an expert website architect. Analyze the user's request and generate a structured build plan for a platform/builder system.
+
+Return a JSON object with this exact structure:
+{
+  "websiteType": "business|news|marketplace|services|jobs|property|food|grocery|ai-tools|drive|blog|portfolio|landing|saas|custom",
+  "title": "Site Title",
+  "description": "Site description",
+  "modules": ["auth", "blog", "analytics", ...],
+  "pages": [
+    {
+      "title": "Page Title",
+      "slug": "page-slug",
+      "label": "Navigation label",
+      "template": "page-template-key"
+    }
+  ],
+  "theme": {
+    "primaryColor": "#hex",
+    "secondaryColor": "#hex",
+    "accentColor": "#hex",
+    "fontFamily": "Font Name",
+    "borderRadius": "0.5rem",
+    "mode": "light|dark|system"
+  },
+  "seo": {
+    "metaTitle": "SEO title",
+    "metaDescription": "SEO description",
+    "keywords": ["keyword1", "keyword2"]
+  }
+}
+
+Map keywords to types:
+- restaurant/cafe/hotel/food → food
+- ecommerce/store/shop/marketplace → marketplace
+- news/article → news
+- job/career/employment → jobs
+- property/real-estate → property
+- blog/article/writer → blog
+- portfolio/creative → portfolio
+- saas/software/startup → saas
+- landing/page → landing
+- file/drive/storage → drive
+- ai/tool → ai-tools
+- service/booking → services
+- grocery → grocery
+- otherwise → business or custom
+
+For modules, include: auth (always unless landing page), plus type-specific modules like:
+- news: news, blog, comments
+- marketplace: products, cart, orders, sellers, reviews, payments
+- services: services, providers, bookings, reviews, payments
+- jobs: employers, jobs, candidates, applications
+- property: property, agents, listings, enquiries
+- food: restaurants, menu, cart, orders, ratings, payments
+- grocery: products, cart, orders, subscriptions, payments
+- ai-tools: tools, billing, subscriptions, ratings
+- drive: files, folders, sharing, starred, storage
+- blog: blog, comments, newsletter
+- portfolio: portfolio, blog, contact
+- landing: (minimal modules, just analytics)
+- saas: tools, pricing, subscriptions, billing, analytics
+- services: services, bookings, reviews, payments
+- business: blog, analytics
+
+Be thorough and accurate with the plan. Include all necessary pages for the platform type.`
+
+  const provider = resolveProvider(c.env)
+
+  if (!provider) {
+    console.warn('[generate-plan] No AI provider configured — using built-in planner.')
+    const plan = buildFallbackPlan(prompt)
+    return c.json({ plan, generated: false, message: 'No AI key configured — using built-in planner.' })
+  }
+
+  try {
+    const { content: response } = await callAI(c.env, [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: prompt },
+    ])
+
+    const parsed = extractJsonFromResponse(response)
+    if (parsed) {
+      return c.json({ plan: parsed, generated: true })
+    }
+
+    console.warn('[generate-plan] AI response could not be parsed — using built-in planner.')
+    return c.json({ plan: buildFallbackPlan(prompt), generated: false, message: 'AI response could not be parsed — used built-in planner.' })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error('[generate-plan] AI error — using built-in planner:', message)
+    return c.json({ plan: buildFallbackPlan(prompt), generated: false, message: `AI generation failed (${message}) — used built-in planner.` })
+  }
+})
 
 // Generate website from prompt
 ai.post('/generate-website', zValidator('json', generateWebsiteSchema), async (c) => {

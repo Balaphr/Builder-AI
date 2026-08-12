@@ -34,7 +34,7 @@ async function ownsAutomation(db: Env['DB'], userId: string, id: string): Promis
 
 // List automations
 automations.get('/', async (c) => {
-  const userId = getUserId(c)
+  const userId = await getUserId(c)
   if (!userId) return c.json({ message: 'Unauthorized' }, 401)
 
   const { results } = await c.env.DB
@@ -47,7 +47,7 @@ automations.get('/', async (c) => {
 
 // Create automation
 automations.post('/', zValidator('json', automationSchema), async (c) => {
-  const userId = getUserId(c)
+  const userId = await getUserId(c)
   if (!userId) return c.json({ message: 'Unauthorized' }, 401)
 
   const data = c.req.valid('json')
@@ -81,7 +81,7 @@ automations.post('/', zValidator('json', automationSchema), async (c) => {
 
 // Full update (name, trigger, actions, is_active)
 automations.put('/:id', zValidator('json', updateSchema), async (c) => {
-  const userId = getUserId(c)
+  const userId = await getUserId(c)
   if (!userId) return c.json({ message: 'Unauthorized' }, 401)
 
   const db = c.env.DB
@@ -133,7 +133,7 @@ automations.put('/:id', zValidator('json', updateSchema), async (c) => {
 
 // Delete automation
 automations.delete('/:id', async (c) => {
-  const userId = getUserId(c)
+  const userId = await getUserId(c)
   if (!userId) return c.json({ message: 'Unauthorized' }, 401)
 
   const db = c.env.DB
@@ -146,7 +146,7 @@ automations.delete('/:id', async (c) => {
 
 // Run an automation right now
 automations.post('/:id/run', async (c) => {
-  const userId = getUserId(c)
+  const userId = await getUserId(c)
   if (!userId) return c.json({ message: 'Unauthorized' }, 401)
 
   const db = c.env.DB
@@ -161,7 +161,7 @@ automations.post('/:id/run', async (c) => {
 
 // Test endpoint (uses the same execution path)
 automations.post('/:id/test', async (c) => {
-  const userId = getUserId(c)
+  const userId = await getUserId(c)
   if (!userId) return c.json({ message: 'Unauthorized' }, 401)
 
   const db = c.env.DB
