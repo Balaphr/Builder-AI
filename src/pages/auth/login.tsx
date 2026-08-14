@@ -4,7 +4,7 @@ import { useAuth } from '@/components/auth-provider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Sparkles, Eye, EyeOff, Mail, Lock } from 'lucide-react'
+import { Sparkles, Eye, EyeOff, Mail, Lock, ShieldCheck } from 'lucide-react'
 import { toast } from '@/components/ui/toast'
 
 export function LoginPage() {
@@ -12,7 +12,8 @@ export function LoginPage() {
   const [password, setPassword] = useState('admin123')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const { login, loginWithGoogle, loginWithGitHub } = useAuth()
+  const [isAdminLogin, setIsAdminLogin] = useState(false)
+  const { login, adminLogin, loginWithGoogle, loginWithGitHub } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,11 +23,34 @@ export function LoginPage() {
       await login(email, password)
       toast.success('Welcome back!')
       navigate('/dashboard')
-    } catch {
-      toast.error('Login failed', 'Invalid email or password')
+    } catch (err) {
+      toast.error('Login failed', describeAuthError(err))
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleAdminLogin = async () => {
+    setIsAdminLogin(true)
+    try {
+      await adminLogin()
+      toast.success('Signed in as Admin')
+      navigate('/dashboard')
+    } catch (err) {
+      toast.error('Admin login failed', describeAuthError(err))
+    } finally {
+      setIsAdminLogin(false)
+    }
+  }
+
+  const describeAuthError = (err: unknown) => {
+    if (err instanceof TypeError || (err instanceof Error && err.message.includes('fetch'))) {
+      return 'API server not running. Start it with "npm run dev" (or run wrangler dev).'
+    }
+    if (err instanceof Error && err.message) {
+      return `${err.message}. Make sure the API server is running and restart it if you just updated the code.`
+    }
+    return 'Unexpected error. Make sure the API server is running (npm run dev).'
   }
 
   return (
@@ -75,6 +99,17 @@ export function LoginPage() {
             </p>
             <p>Email: admin@aibuilder.com · Password: admin123</p>
           </div>
+
+          <Button
+            variant="gradient"
+            className="w-full"
+            isLoading={isAdminLogin}
+            onClick={handleAdminLogin}
+            disabled={isLoading}
+          >
+            <ShieldCheck className="w-4 h-4 mr-2" />
+            Quick Admin Login
+          </Button>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">

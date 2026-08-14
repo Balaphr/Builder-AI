@@ -1,7 +1,7 @@
 -- Seed data for AI Website Builder
 
--- Insert default templates
-INSERT INTO templates (id, name, category, description, thumbnail, is_pro) VALUES
+-- Insert default templates (idempotent)
+INSERT OR REPLACE INTO templates (id, name, category, description, thumbnail, is_pro) VALUES
 ('tpl-restaurant', 'Restaurant', 'Food & Drink', 'Modern restaurant website with menu, reservations, and gallery', '/templates/restaurant.jpg', 0),
 ('tpl-hotel', 'Hotel', 'Hospitality', 'Luxury hotel website with booking, rooms, and amenities', '/templates/hotel.jpg', 0),
 ('tpl-portfolio', 'Portfolio', 'Creative', 'Stunning portfolio for designers and creatives', '/templates/portfolio.jpg', 0),
@@ -23,8 +23,8 @@ INSERT INTO templates (id, name, category, description, thumbnail, is_pro) VALUE
 ('tpl-saas', 'SaaS', 'Technology', 'Software-as-a-service product page with pricing', '/templates/saas.jpg', 1),
 ('tpl-wedding', 'Wedding', 'Events', 'Beautiful wedding website with RSVP and gallery', '/templates/wedding.jpg', 0);
 
--- Insert default feature flags
-INSERT INTO feature_flags (id, name, description, is_enabled, allowed_plans) VALUES
+-- Insert default feature flags (idempotent)
+INSERT OR REPLACE INTO feature_flags (id, name, description, is_enabled, allowed_plans) VALUES
 ('ff-ai-builder', 'AI Website Builder', 'AI-powered website generation', 1, '["free","pro","business","enterprise"]'),
 ('ff-ai-chat', 'AI Chat Assistant', 'Chat-based website editing', 1, '["free","pro","business","enterprise"]'),
 ('ff-ai-images', 'AI Image Generation', 'AI-powered image creation', 1, '["pro","business","enterprise"]'),

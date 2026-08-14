@@ -7,6 +7,7 @@ interface AuthContextType {
   isLoading: boolean
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
+  adminLogin: () => Promise<void>
   loginWithGoogle: () => void
   loginWithGitHub: () => void
   loginWithOTP: (email: string) => Promise<void>
@@ -47,6 +48,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       password,
     })
+    localStorage.setItem('auth-token', response.token)
+    setUser(response.user)
+  }
+
+  const adminLogin = async () => {
+    const response = await api.post<{ user: User; token: string }>('/auth/admin-login')
     localStorage.setItem('auth-token', response.token)
     setUser(response.user)
   }
@@ -98,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         login,
+        adminLogin,
         loginWithGoogle,
         loginWithGitHub,
         loginWithOTP,

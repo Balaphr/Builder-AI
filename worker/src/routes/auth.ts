@@ -114,6 +114,53 @@ auth.post('/login', zValidator('json', loginSchema), async (c) => {
   })
 })
 
+// Built-in admin auto-login: guarantees the demo admin account exists
+// (creates it on the fly if the DB has no seed) and returns a valid session.
+auth.post('/admin-login', async (c) => {
+  const db = c.env.DB
+  const email = 'admin@aibuilder.com'
+  const password = 'admin123'
+
+  let user = await db.prepare('SELECT * FROM users WHERE email = ?').bind(email).first()
+
+  if (!user) {
+    const id = generateId()
+    const passwordHash = await hashPassword(password)
+    await db
+      .prepare('INSERT INTO users (id, email, name, password_hash, role, plan, ai_credits, account_type, permissions) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(id, email, 'Admin User', passwordHash, 'admin', 'enterprise', 999999, 'admin', '["*"]')
+      .run()
+    user = await db.prepare('SELECT * FROM users WHERE id = ?').bind(id).first()
+  }
+
+  const token = await generateJWT(
+    {
+      sub: user!.id,
+      email: user!.email,
+      name: user!.name,
+      role: user!.role,
+      plan: user!.plan,
+    },
+    c.env.JWT_SECRET
+  )
+
+  return c.json({
+    user: {
+      id: user!.id,
+      email: user!.email,
+      name: user!.name,
+      role: user!.role,
+      plan: user!.plan,
+      accountType: user!.account_type,
+      permissions: ['*'],
+      aiCredits: user!.ai_credits,
+      storageUsed: user!.storage_used,
+      avatar: user!.avatar,
+    },
+    token,
+  })
+})
+
 auth.post('/otp/send', zValidator('json', otpSchema), async (c) => {
   const { email } = c.req.valid('json')
   const db = c.env.DB
