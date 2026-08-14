@@ -9,12 +9,7 @@ ALTER TABLE websites ADD COLUMN type_config TEXT DEFAULT '{}';
 ALTER TABLE templates ADD COLUMN website_type TEXT DEFAULT 'business';
 ALTER TABLE templates ADD COLUMN modules TEXT DEFAULT '[]';
 
--- 3. Add SEO and settings to pages
-ALTER TABLE pages ADD COLUMN seo TEXT DEFAULT '{}';
-ALTER TABLE pages ADD COLUMN settings TEXT DEFAULT '{}';
-ALTER TABLE pages ADD COLUMN is_homepage INTEGER DEFAULT 0;
-
--- 4. Module system tables
+-- 3. Module system tables
 CREATE TABLE IF NOT EXISTS website_modules (
   id TEXT PRIMARY KEY,
   website_id TEXT NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
