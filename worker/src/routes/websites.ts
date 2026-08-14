@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import type { Env } from '../types'
-import { generateId, slugify } from '../utils'
+import { generateId, slugify, getUserId, canAccessWebsite, auditLog } from '../utils'
 
 const websites = new Hono<{ Bindings: Env }>()
 
@@ -28,57 +28,75 @@ const updateWebsiteSchema = z.object({
 // List websites
 websites.get('/', async (c) => {
   const db = c.env.DB
-  const authHeader = c.req.header('Authorization')
+  const userId = await getUserId(c)
+  if (!userId) return c.json({ message: 'Unauthorized' }, 401)
 
-  if (!authHeader?.startsWith('Bearer ')) {
-    return c.json({ message: 'Unauthorized' }, 401)
-  }
-
-  const { verifyJWT } = await import('../utils')
-  const payload = await verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
-  if (!payload) return c.json({ message: 'Invalid token' }, 401)
-
-  const { results } = await db
+  // Websites the user owns
+  const { results: owned } = await db
     .prepare('SELECT * FROM websites WHERE user_id = ? ORDER BY updated_at DESC')
-    .bind(payload.sub)
+    .bind(userId)
     .all()
 
-  return c.json({ websites: results })
+  // Websites assigned to the user (sub/test accounts)
+  const { results: assigned } = await db
+    .prepare(
+      `SELECT w.*, aw.permissions as assigned_permissions FROM websites w
+       JOIN account_websites aw ON aw.website_id = w.id
+       WHERE aw.user_id = ? ORDER BY w.updated_at DESC`
+    )
+    .bind(userId)
+    .all()
+
+  const seen = new Set<string>()
+  const websitesList: Record<string, unknown>[] = []
+  for (const w of assigned) {
+    seen.add(w.id as string)
+    let perms: string[] = []
+    try { perms = JSON.parse((w.assigned_permissions as string) || '[]') } catch { perms = [] }
+    websitesList.push({ ...w, accessRole: 'assigned', assignedPermissions: perms })
+  }
+  for (const w of owned) {
+    if (seen.has(w.id as string)) continue
+    websitesList.push({ ...w, accessRole: 'owner', assignedPermissions: null })
+  }
+
+  return c.json({ websites: websitesList })
 })
 
 // Get website by ID
 websites.get('/:id', async (c) => {
   const db = c.env.DB
   const id = c.req.param('id')
+  const userId = await getUserId(c)
+  if (!userId) return c.json({ message: 'Unauthorized' }, 401)
 
   const website = await db.prepare('SELECT * FROM websites WHERE id = ?').bind(id).first()
   if (!website) return c.json({ message: 'Website not found' }, 404)
 
-  return c.json({ website })
+  const access = await canAccessWebsite(db, userId, id, 'website.view')
+  if (!access.ok) return c.json({ message: 'Forbidden' }, 403)
+
+  return c.json({ website, accessRole: access.role })
 })
 
 // Create website
 websites.post('/', zValidator('json', createWebsiteSchema), async (c) => {
   const db = c.env.DB
-  const authHeader = c.req.header('Authorization')
+  const userId = await getUserId(c)
+  if (!userId) return c.json({ message: 'Unauthorized' }, 401)
 
-  if (!authHeader?.startsWith('Bearer ')) {
-    return c.json({ message: 'Unauthorized' }, 401)
-  }
-
-  const { verifyJWT } = await import('../utils')
-  const payload = await verifyJWT(authHeader.split(' ')[1], c.env.JWT_SECRET)
-  if (!payload) return c.json({ message: 'Invalid token' }, 401)
+  const canCreate = await import('../utils').then((m) => m.can(db, userId, 'website.create'))
+  if (!canCreate) return c.json({ message: 'Forbidden — you do not have permission to create websites' }, 403)
 
   const { title, description, templateId, type, typeConfig, modules: requestedModules } = c.req.valid('json')
   const id = generateId()
   const slug = slugify(title)
 
   // Check website limit based on plan
-  const user = await db.prepare('SELECT plan FROM users WHERE id = ?').bind(payload.sub).first()
+  const user = await db.prepare('SELECT plan FROM users WHERE id = ?').bind(userId).first()
   const websiteCount = await db
     .prepare('SELECT COUNT(*) as count FROM websites WHERE user_id = ?')
-    .bind(payload.sub)
+    .bind(userId)
     .first()
 
   const limits: Record<string, number> = { free: 3, pro: 25, business: 100, enterprise: 999 }
@@ -92,7 +110,6 @@ websites.post('/', zValidator('json', createWebsiteSchema), async (c) => {
   let settings = {}
   let seo = {}
   let theme = {}
-  let initialPages = []
 
   if (templateId) {
     const template = await db.prepare('SELECT * FROM templates WHERE id = ?').bind(templateId).first()
@@ -101,7 +118,7 @@ websites.post('/', zValidator('json', createWebsiteSchema), async (c) => {
         settings = JSON.parse(template.settings as string || '{}')
         seo = JSON.parse(template.seo as string || '{}')
         theme = JSON.parse(template.theme as string || '{}')
-      } catch {}
+      } catch { /* ignore malformed template JSON */ }
     }
   }
 
@@ -111,7 +128,7 @@ websites.post('/', zValidator('json', createWebsiteSchema), async (c) => {
     .prepare(
       'INSERT INTO websites (id, user_id, title, slug, description, template_id, settings, seo, theme, type, type_config) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     )
-    .bind(id, payload.sub, title, slug, description || '', templateId || null, JSON.stringify(settings), JSON.stringify(seo), JSON.stringify(theme), websiteType, JSON.stringify(typeConfig || {}))
+    .bind(id, userId, title, slug, description || '', templateId || null, JSON.stringify(settings), JSON.stringify(seo), JSON.stringify(theme), websiteType, JSON.stringify(typeConfig || {}))
     .run()
 
   // Enable modules for the website
@@ -119,23 +136,25 @@ websites.post('/', zValidator('json', createWebsiteSchema), async (c) => {
     for (const moduleKey of requestedModules) {
       const moduleId = generateId()
       await db
-        .prepare('INSERT INTO website_modules (id, website_id, module_key, config, is_active) VALUES (?, ?, ?, ?, 1)')
+        .prepare('INSERT OR IGNORE INTO website_modules (id, website_id, module_key, config, is_active) VALUES (?, ?, ?, ?, 1)')
         .bind(moduleId, id, moduleKey, '{}')
         .run()
     }
   }
 
-  // Create default pages
-  const defaultPages: Array<{ title: string; slug: string }> = []
-  if (websiteType === 'landing') {
-    defaultPages.push({ title: 'Home', slug: 'home' })
-  } else {
-    defaultPages.push(
-      { title: 'Home', slug: 'home' },
-      { title: 'About', slug: 'about' },
-      { title: 'Contact', slug: 'contact' }
-    )
-  }
+  // Create default pages based on the website type
+  const { WEBSITE_TYPES } = await import('../lib/website-types')
+  const typeDef = WEBSITE_TYPES.find((t) => t.id === websiteType)
+  const typePages = typeDef?.pages || []
+  const defaultPages: Array<{ title: string; slug: string }> = typePages.length > 0
+    ? typePages.map((p) => ({ title: p.title, slug: p.slug }))
+    : websiteType === 'landing'
+      ? [{ title: 'Home', slug: 'home' }]
+      : [
+          { title: 'Home', slug: 'home' },
+          { title: 'About', slug: 'about' },
+          { title: 'Contact', slug: 'contact' },
+        ]
 
   for (let i = 0; i < defaultPages.length; i++) {
     const page = defaultPages[i]
@@ -147,12 +166,7 @@ websites.post('/', zValidator('json', createWebsiteSchema), async (c) => {
       .run()
   }
 
-  // Set homepage flag on the first page
-  // Already handled above
-
   // Fetch and enable modules from the type config
-  const { WEBSITE_TYPES } = await import('../lib/website-types')
-  const typeDef = WEBSITE_TYPES.find((t) => t.id === websiteType)
   if (typeDef && Array.isArray(typeDef.modules)) {
     for (const moduleKey of typeDef.modules) {
       try {
@@ -166,6 +180,8 @@ websites.post('/', zValidator('json', createWebsiteSchema), async (c) => {
       }
     }
   }
+
+  await auditLog(db, { userId, action: 'website.create', resourceType: 'website', resourceId: id, details: { type: websiteType } })
 
   const website = await db.prepare('SELECT * FROM websites WHERE id = ?').bind(id).first()
   return c.json({ website }, 201)
@@ -321,6 +337,7 @@ websites.post('/:id/duplicate', async (c) => {
 })
 
 websites.get('/:id/modules', async (c) => {
+  const db = c.env.DB
   const userId = await getUserId(c)
   const { id } = c.req.param()
 

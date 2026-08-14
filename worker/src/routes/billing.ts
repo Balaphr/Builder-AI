@@ -49,7 +49,7 @@ billing.get('/subscription', async (c) => {
 })
 
 billing.post('/checkout', async (c) => {
-  const { plan, paymentMethod } = await c.req.json<{ plan: string; paymentMethod: string }>()
+  const { plan } = await c.req.json<{ plan: string }>()
 
   // In production, create Stripe/Razorpay checkout session
   return c.json({
@@ -59,9 +59,6 @@ billing.post('/checkout', async (c) => {
 })
 
 billing.post('/webhook/stripe', async (c) => {
-  const body = await c.req.text()
-  const sig = c.req.header('stripe-signature')
-
   // Verify webhook signature in production
   // Process the event
   console.log('Stripe webhook received')
@@ -70,7 +67,7 @@ billing.post('/webhook/stripe', async (c) => {
 })
 
 billing.post('/webhook/razorpay', async (c) => {
-  const body = await c.req.text()
+  await c.req.text()
 
   // Verify webhook signature in production
   console.log('Razorpay webhook received')

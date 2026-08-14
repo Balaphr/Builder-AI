@@ -9,7 +9,7 @@ import { toast } from '@/components/ui/toast'
 import { Moon, Sun, Monitor, User, Shield, Bell, Globe } from 'lucide-react'
 
 export function SettingsPage() {
-  const { user, updateUser } = useAuth()
+  const { user } = useAuth()
   const { theme, setTheme } = useTheme()
   const [name, setName] = useState(user?.name || '')
   const [email, setEmail] = useState(user?.email || '')
@@ -20,7 +20,7 @@ export function SettingsPage() {
     try {
       // In production, call API to update user
       toast.success('Settings saved')
-    } catch (err) {
+    } catch {
       toast.error('Failed to save settings')
     } finally {
       setIsSaving(false)

@@ -19,7 +19,11 @@ CREATE TABLE IF NOT EXISTS users (
   email_verified INTEGER DEFAULT 0,
   last_login_at TEXT,
   created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now'))
+  updated_at TEXT DEFAULT (datetime('now')),
+  account_type TEXT DEFAULT 'custom' CHECK (account_type IN ('admin', 'sub', 'test', 'custom')),
+  is_disabled INTEGER DEFAULT 0,
+  created_by TEXT REFERENCES users(id),
+  permissions TEXT DEFAULT '[]'
 );
 
 -- Websites table
@@ -37,6 +41,8 @@ CREATE TABLE IF NOT EXISTS websites (
   settings TEXT DEFAULT '{}',
   seo TEXT DEFAULT '{}',
   theme TEXT DEFAULT '{}',
+  last_published_version INTEGER DEFAULT 0,
+  published_version INTEGER DEFAULT 0,
   published_at TEXT,
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now')),
@@ -52,6 +58,12 @@ CREATE TABLE IF NOT EXISTS pages (
   content TEXT DEFAULT '[]',
   is_published INTEGER DEFAULT 0,
   sort_order INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'saved', 'modified', 'published', 'scheduled', 'unpublished')),
+  visibility TEXT DEFAULT 'visible' CHECK (visibility IN ('visible', 'hidden')),
+  modified INTEGER DEFAULT 0,
+  seo TEXT DEFAULT '{}',
+  settings TEXT DEFAULT '{}',
+  is_homepage INTEGER DEFAULT 0,
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now')),
   UNIQUE(website_id, slug)
@@ -262,6 +274,62 @@ CREATE TABLE IF NOT EXISTS comments (
   created_at TEXT DEFAULT (datetime('now'))
 );
 
+-- Roles table (RBAC)
+CREATE TABLE IF NOT EXISTS roles (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  description TEXT,
+  permissions TEXT DEFAULT '[]',
+  is_system INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+-- Permissions catalog
+CREATE TABLE IF NOT EXISTS permissions (
+  id TEXT PRIMARY KEY,
+  key TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  description TEXT,
+  category TEXT DEFAULT 'general',
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+-- Website access assignments (tenant isolation for sub/test accounts)
+CREATE TABLE IF NOT EXISTS account_websites (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  website_id TEXT NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+  permissions TEXT DEFAULT '[]',
+  created_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(user_id, website_id)
+);
+
+-- Draft versions (snapshots used for rollback/recovery)
+CREATE TABLE IF NOT EXISTS draft_versions (
+  id TEXT PRIMARY KEY,
+  website_id TEXT NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+  version INTEGER NOT NULL,
+  label TEXT,
+  pages_json TEXT DEFAULT '[]',
+  settings_json TEXT DEFAULT '{}',
+  theme_json TEXT DEFAULT '{}',
+  created_by TEXT REFERENCES users(id),
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+-- Published versions (what is live; supports rollback)
+CREATE TABLE IF NOT EXISTS published_versions (
+  id TEXT PRIMARY KEY,
+  website_id TEXT NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+  version INTEGER NOT NULL,
+  pages_json TEXT DEFAULT '[]',
+  settings_json TEXT DEFAULT '{}',
+  theme_json TEXT DEFAULT '{}',
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'superseded', 'rolled_back')),
+  published_by TEXT REFERENCES users(id),
+  published_at TEXT DEFAULT (datetime('now'))
+);
+
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_websites_user_id ON websites(user_id);
 CREATE INDEX IF NOT EXISTS idx_websites_slug ON websites(slug);
@@ -275,3 +343,9 @@ CREATE INDEX IF NOT EXISTS idx_analytics_events_website_id ON analytics_events(w
 CREATE INDEX IF NOT EXISTS idx_analytics_events_created_at ON analytics_events(created_at);
 CREATE INDEX IF NOT EXISTS idx_form_submissions_website_id ON form_submissions(website_id);
 CREATE INDEX IF NOT EXISTS idx_team_members_website_id ON team_members(website_id);
+CREATE INDEX IF NOT EXISTS idx_users_account_type ON users(account_type);
+CREATE INDEX IF NOT EXISTS idx_account_websites_user_id ON account_websites(user_id);
+CREATE INDEX IF NOT EXISTS idx_account_websites_website_id ON account_websites(website_id);
+CREATE INDEX IF NOT EXISTS idx_draft_versions_website_id ON draft_versions(website_id);
+CREATE INDEX IF NOT EXISTS idx_published_versions_website_id ON published_versions(website_id);
+CREATE INDEX IF NOT EXISTS idx_pages_status ON pages(website_id, status);

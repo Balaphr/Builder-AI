@@ -3,26 +3,34 @@ import { api } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatNumber } from '@/lib/utils'
-import { BarChart3, Eye, Users, Clock, ArrowUpRight, Globe, Monitor, Smartphone, Tablet } from 'lucide-react'
+import { Eye, Users, Clock, ArrowUpRight, Globe, Monitor, Smartphone, Tablet } from 'lucide-react'
+
+interface AnalyticsData {
+  visitors: number
+  pageViews: number
+  bounceRate: number
+  avgSessionDuration: number
+  topPages: { page_path?: string; views: number }[]
+  countries: { country: string; visitors: number }[]
+  devices: { device: string; count: number }[]
+  daily: { date: string; visitors: number }[]
+}
 
 export function AnalyticsPage() {
-  const [analytics, setAnalytics] = useState<any>(null)
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [period, setPeriod] = useState('7d')
-  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => { loadAnalytics() }, [period])
 
   const loadAnalytics = async () => {
     try {
-      const { websites } = await api.get<{ websites: any[] }>('/websites')
+      const { websites } = await api.get<{ websites: { id: string }[] }>('/websites')
       if (websites.length > 0) {
-        const { analytics: data } = await api.get<{ analytics: any }>(`/analytics?websiteId=${websites[0].id}&period=${period}`)
+        const { analytics: data } = await api.get<{ analytics: AnalyticsData }>(`/analytics?websiteId=${websites[0].id}&period=${period}`)
         setAnalytics(data)
       }
     } catch (err) {
       console.error(err)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -91,7 +99,7 @@ export function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {(analytics?.topPages || []).map((page: any, i: number) => (
+              {(analytics?.topPages || []).map((page: { page_path?: string; views: number }, i: number) => (
                 <div key={i} className="flex items-center justify-between">
                   <span className="text-sm">{page.page_path || '/'}</span>
                   <span className="text-sm font-medium">{formatNumber(page.views)}</span>
@@ -110,7 +118,7 @@ export function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {(analytics?.countries || []).map((country: any, i: number) => (
+              {(analytics?.countries || []).map((country: { country: string; visitors: number }, i: number) => (
                 <div key={i} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Globe className="w-4 h-4 text-muted-foreground" />
@@ -132,8 +140,8 @@ export function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {(analytics?.devices || []).map((device: any, i: number) => {
-                const icons: Record<string, any> = { desktop: Monitor, mobile: Smartphone, tablet: Tablet }
+              {(analytics?.devices || []).map((device: { device: string; count: number }, i: number) => {
+                const icons: Record<string, React.ComponentType<{ className?: string }>> = { desktop: Monitor, mobile: Smartphone, tablet: Tablet }
                 const Icon = icons[device.device] || Monitor
                 return (
                   <div key={i} className="flex items-center justify-between">
@@ -158,8 +166,8 @@ export function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="h-48 flex items-end gap-2">
-              {(analytics?.daily || []).map((day: any, i: number) => {
-                const max = Math.max(...(analytics?.daily || []).map((d: any) => d.visitors || 0), 1)
+              {(analytics?.daily || []).map((day: { date: string; visitors: number }, i: number) => {
+                const max = Math.max(...(analytics?.daily || []).map((d: { visitors: number }) => d.visitors || 0), 1)
                 const height = ((day.visitors || 0) / max) * 100
                 return (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1">

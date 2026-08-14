@@ -61,7 +61,7 @@ app.get('/', async (c) => {
 
   const modules = results.map((m: Record<string, unknown>) => {
     let config = {}
-    try { config = JSON.parse(m.config as string || '{}') } catch {}
+    try { config = JSON.parse(m.config as string || '{}') } catch { /* ignore malformed config */ }
     return {
       id: m.id,
       moduleKey: m.module_key,

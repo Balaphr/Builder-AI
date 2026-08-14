@@ -1,33 +1,35 @@
 import { useEffect, useState } from 'react'
-import { useAuth } from '@/components/auth-provider'
 import { api } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { getInitials } from '@/lib/utils'
-import { toast } from '@/components/ui/toast'
-import { Users, UserPlus, Shield, Edit, Eye, Trash2 } from 'lucide-react'
+import { Users, UserPlus } from 'lucide-react'
+
+interface TeamMember {
+  id: string
+  name: string
+  email: string
+  role: string
+  avatar?: string
+}
 
 export function TeamPage() {
-  const { user } = useAuth()
-  const [members, setMembers] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [members, setMembers] = useState<TeamMember[]>([])
 
   useEffect(() => { loadMembers() }, [])
 
   const loadMembers = async () => {
     try {
       // Get first website
-      const { websites } = await api.get<{ websites: any[] }>('/websites')
+      const { websites } = await api.get<{ websites: { id: string }[] }>('/websites')
       if (websites.length > 0) {
-        const { members } = await api.get<{ members: any[] }>(`/team/${websites[0].id}`)
+        const { members } = await api.get<{ members: TeamMember[] }>(`/team/${websites[0].id}`)
         setMembers(members)
       }
     } catch (err) {
       console.error(err)
-    } finally {
-      setIsLoading(false)
     }
   }
 

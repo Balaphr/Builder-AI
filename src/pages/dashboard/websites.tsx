@@ -16,8 +16,17 @@ import {
 // http://localhost:5173/s/<slug>; once deployed it becomes the public domain.
 const liveUrl = (slug: string) => `${window.location.origin}/s/${slug}`
 
+interface WebsiteCard {
+  id: string
+  title: string
+  slug: string
+  description?: string
+  status?: string
+  updated_at?: string
+}
+
 export function WebsitesPage() {
-  const [websites, setWebsites] = useState<any[]>([])
+  const [websites, setWebsites] = useState<WebsiteCard[]>([])
   const [search, setSearch] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [publishingId, setPublishingId] = useState<string | null>(null)
@@ -27,7 +36,7 @@ export function WebsitesPage() {
 
   const loadWebsites = async () => {
     try {
-      const { websites } = await api.get<{ websites: any[] }>('/websites')
+      const { websites } = await api.get<{ websites: WebsiteCard[] }>('/websites')
       setWebsites(websites)
     } catch (err) {
       console.error(err)
@@ -42,17 +51,17 @@ export function WebsitesPage() {
       await api.delete(`/websites/${id}`)
       setWebsites((w) => w.filter((site) => site.id !== id))
       toast.success('Website deleted')
-    } catch (err) {
+    } catch {
       toast.error('Failed to delete website')
     }
   }
 
   const handleDuplicate = async (id: string) => {
     try {
-      const { website } = await api.post<{ website: any }>(`/websites/${id}/duplicate`)
+      const { website } = await api.post<{ website: WebsiteCard }>(`/websites/${id}/duplicate`)
       setWebsites((w) => [website, ...w])
       toast.success('Website duplicated')
-    } catch (err) {
+    } catch {
       toast.error('Failed to duplicate website')
     }
   }
@@ -60,10 +69,10 @@ export function WebsitesPage() {
   const handlePublish = async (id: string, slug: string) => {
     setPublishingId(id)
     try {
-      const { website } = await api.post<{ website: any }>(`/websites/${id}/publish`)
+      const { website } = await api.post<{ website: WebsiteCard }>(`/websites/${id}/publish`)
       setWebsites((w) => w.map((site) => (site.id === id ? website : site)))
       toast.success('Website published', `Live at ${liveUrl(slug)}`)
-    } catch (err) {
+    } catch {
       toast.error('Failed to publish website')
     } finally {
       setPublishingId(null)
@@ -72,10 +81,10 @@ export function WebsitesPage() {
 
   const handleUnpublish = async (id: string) => {
     try {
-      const { website } = await api.post<{ website: any }>(`/websites/${id}/unpublish`)
+      const { website } = await api.post<{ website: WebsiteCard }>(`/websites/${id}/unpublish`)
       setWebsites((w) => w.map((site) => (site.id === id ? website : site)))
       toast.success('Website unpublished')
-    } catch (err) {
+    } catch {
       toast.error('Failed to unpublish website')
     }
   }
@@ -86,7 +95,7 @@ export function WebsitesPage() {
       setCopiedSlug(slug)
       toast.success('Live URL copied to clipboard', liveUrl(slug))
       setTimeout(() => setCopiedSlug(null), 2000)
-    } catch (err) {
+    } catch {
       toast.error('Failed to copy URL')
     }
   }
@@ -187,7 +196,7 @@ export function WebsitesPage() {
                     )}
 
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">{formatDate(website.updated_at)}</span>
+                      <span className="text-xs text-muted-foreground">{website.updated_at ? formatDate(website.updated_at) : ''}</span>
                       <div className="flex items-center gap-1">
                         <Link to={`/dashboard/builder/${website.id}`} title="Edit website">
                           <Button variant="ghost" size="icon" className="h-8 w-8">

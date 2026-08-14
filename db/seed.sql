@@ -36,5 +36,5 @@ INSERT INTO feature_flags (id, name, description, is_enabled, allowed_plans) VAL
 
 -- Insert default admin user (password: admin123)
 -- INSERT OR REPLACE so re-running the seed fixes the hash of an existing admin row
-INSERT OR REPLACE INTO users (id, email, name, password_hash, role, plan, ai_credits) VALUES
-('usr-admin-001', 'admin@aibuilder.com', 'Admin User', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'admin', 'enterprise', 999999);
+INSERT OR REPLACE INTO users (id, email, name, password_hash, role, plan, ai_credits, account_type, permissions) VALUES
+('usr-admin-001', 'admin@aibuilder.com', 'Admin User', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'admin', 'enterprise', 999999, 'admin', '["*"]');

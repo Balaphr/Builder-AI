@@ -2,6 +2,10 @@ import { useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { HardDrive } from 'lucide-react'
 
+// Sections store arbitrary JSON data produced by the builder, so a loose shape is intentional.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type JsonRecord = Record<string, any>
+
 export interface RenderPage {
   id: string
   title: string
@@ -12,8 +16,8 @@ export interface RenderPage {
 interface SiteSection {
   id: string
   type: string
-  data: Record<string, any>
-  styles?: Record<string, any>
+  data: JsonRecord
+  styles?: JsonRecord
 }
 
 interface SiteTheme {
@@ -56,8 +60,8 @@ function parseSections(page: RenderPage): SiteSection[] {
   return Array.isArray(raw) ? (raw as SiteSection[]) : []
 }
 
-function listOf(value: unknown, fallback: unknown[]): any[] {
-  return Array.isArray(value) && value.length > 0 ? (value as any[]) : fallback
+function listOf(value: unknown, fallback: unknown[]): JsonRecord[] {
+  return Array.isArray(value) && value.length > 0 ? (value as JsonRecord[]) : (fallback as JsonRecord[])
 }
 
 const button = (theme: SiteTheme, text: string, href?: string) => (
@@ -129,7 +133,7 @@ function SectionRenderer({ section, theme }: { section: SiteSection; theme: Site
           <div className="max-w-5xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-8" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.heading || 'Gallery'}</h2>
             <div className="grid md:grid-cols-3 gap-4">
-              {images.map((img: any, i: number) => {
+              {images.map((img: JsonRecord, i: number) => {
                 const src = typeof img === 'string' ? img : img?.src
                 return src ? (
                   <img key={i} src={src} alt={typeof img === 'string' ? '' : img?.alt || ''} className="w-full aspect-square object-cover rounded-xl" style={{ borderRadius: radius }} />
@@ -151,7 +155,7 @@ function SectionRenderer({ section, theme }: { section: SiteSection; theme: Site
           <div className="max-w-5xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-10" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.heading || 'Pricing'}</h2>
             <div className="grid md:grid-cols-3 gap-6 items-start">
-              {plans.map((plan: any, i: number) => (
+              {plans.map((plan: JsonRecord, i: number) => (
                 <div key={i} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col" style={{ borderRadius: radius }}>
                   <h3 className="font-semibold text-lg mb-1">{plan.name}</h3>
                   <div className="text-3xl font-bold mb-4" style={{ color: primary }}>{plan.price}</div>
@@ -179,7 +183,7 @@ function SectionRenderer({ section, theme }: { section: SiteSection; theme: Site
           <div className="max-w-5xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-10" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.heading || 'What People Say'}</h2>
             <div className="grid md:grid-cols-2 gap-6">
-              {items.map((t: any, i: number) => (
+              {items.map((t: JsonRecord, i: number) => (
                 <div key={i} className="bg-white rounded-xl border border-slate-100 p-6 shadow-sm" style={{ borderRadius: radius }}>
                   <p className="text-slate-700 mb-4 italic">“{t.quote || t.text}”</p>
                   <div className="flex items-center gap-3">
@@ -207,7 +211,7 @@ function SectionRenderer({ section, theme }: { section: SiteSection; theme: Site
           <div className="max-w-3xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-8" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.heading || 'Frequently Asked Questions'}</h2>
             <div className="space-y-3">
-              {items.map((f: any, i: number) => (
+              {items.map((f: JsonRecord, i: number) => (
                 <details key={i} className="bg-white border border-slate-100 rounded-xl p-5" style={{ borderRadius: radius }}>
                   <summary className="font-medium cursor-pointer">{f.question || f.title}</summary>
                   <p className="text-slate-600 mt-2 text-sm leading-relaxed">{f.answer || f.description}</p>
@@ -227,7 +231,7 @@ function SectionRenderer({ section, theme }: { section: SiteSection; theme: Site
           <div className="max-w-5xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-10" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.heading || 'Our Team'}</h2>
             <div className="grid md:grid-cols-3 gap-6">
-              {members.map((m: any, i: number) => (
+              {members.map((m: JsonRecord, i: number) => (
                 <div key={i} className="text-center bg-white rounded-xl border border-slate-100 p-6" style={{ borderRadius: radius }}>
                   {m.image ? (
                     <img src={m.image} alt={m.name} className="w-24 h-24 rounded-full object-cover mx-auto mb-4" />
@@ -254,7 +258,7 @@ function SectionRenderer({ section, theme }: { section: SiteSection; theme: Site
           <div className="max-w-5xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-10" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.heading || 'What We Offer'}</h2>
             <div className="grid md:grid-cols-3 gap-6">
-              {features.map((f: any, i: number) => (
+              {features.map((f: JsonRecord, i: number) => (
                 <div key={i}>
                   <div className="w-10 h-10 rounded-lg mb-3 flex items-center justify-center text-white" style={{ backgroundColor: primary }}>
                     <span>✦</span>
@@ -288,7 +292,7 @@ function SectionRenderer({ section, theme }: { section: SiteSection; theme: Site
           <div className="max-w-4xl mx-auto">
             {data.title && <h2 className="text-3xl font-bold text-center mb-8" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.title}</h2>}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-              {stats.map((s: any, i: number) => (
+              {stats.map((s: JsonRecord, i: number) => (
                 <div key={i}>
                   <div className="text-3xl md:text-4xl font-bold" style={{ color: primary }}>{s.value}</div>
                   <div className="text-sm text-slate-500 mt-1">{s.label}</div>
@@ -309,10 +313,10 @@ function SectionRenderer({ section, theme }: { section: SiteSection; theme: Site
             <h2 className="text-3xl font-bold text-center mb-2" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.heading || 'Contact Us'}</h2>
             {data.description && <p className="text-center text-slate-600 mb-8">{data.description}</p>}
             <form className="bg-white rounded-2xl border border-slate-100 p-8 space-y-4 shadow-sm" style={{ borderRadius: radius }} onSubmit={(e) => e.preventDefault()}>
-              {fields.map((f: string, i: number) => (
+              {fields.map((f: unknown, i: number) => (
                 <input
                   key={i}
-                  placeholder={f.charAt(0).toUpperCase() + f.slice(1)}
+                  placeholder={String(f).charAt(0).toUpperCase() + String(f).slice(1)}
                   className="w-full p-3 border border-slate-200 rounded-lg text-sm"
                 />
               ))}
@@ -352,7 +356,7 @@ function SectionRenderer({ section, theme }: { section: SiteSection; theme: Site
           <div className="max-w-5xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-10" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.heading || 'Job Openings'}</h2>
             <div className="space-y-4">
-              {items.map((item: any, i: number) => (
+              {items.map((item: JsonRecord, i: number) => (
                 <div key={i} className="border border-slate-200 rounded-xl p-6 bg-white">
                   <div className="flex justify-between items-start">
                     <h3 className="font-semibold text-lg">{item.title}</h3>
@@ -375,7 +379,7 @@ function SectionRenderer({ section, theme }: { section: SiteSection; theme: Site
           <div className="max-w-5xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-10" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.heading || 'Properties'}</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {items.map((item: any, i: number) => (
+              {items.map((item: JsonRecord, i: number) => (
                 <div key={i} className="border border-slate-200 rounded-xl overflow-hidden bg-white">
                   {item.image ? <img src={item.image} alt={item.title} className="w-full h-48 object-cover" /> : <div className="aspect-video bg-slate-100 flex items-center justify-center text-slate-400">Property Image</div>}
                   <div className="p-4">
@@ -399,7 +403,7 @@ function SectionRenderer({ section, theme }: { section: SiteSection; theme: Site
           <div className="max-w-5xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-10" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.heading || 'Products'}</h2>
             <div className="grid md:grid-cols-3 gap-6">
-              {items.map((item: any, i: number) => (
+              {items.map((item: JsonRecord, i: number) => (
                 <div key={i} className="border border-slate-200 rounded-xl overflow-hidden bg-white">
                   {item.image ? <img src={item.image} alt={item.name} className="w-full h-48 object-cover" /> : <div className="aspect-video bg-slate-100 flex items-center justify-center text-slate-400">Product Image</div>}
                   <div className="p-4">
@@ -424,7 +428,7 @@ function SectionRenderer({ section, theme }: { section: SiteSection; theme: Site
           <div className="max-w-3xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-10" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.heading || 'Latest Posts'}</h2>
             <div className="space-y-8">
-              {items.map((item: any, i: number) => (
+              {items.map((item: JsonRecord, i: number) => (
                 <article key={i}>
                   {item.image ? <img src={item.image} alt={item.title} className="w-full h-48 object-cover rounded-xl mb-3" /> : null}
                   <h3 className="font-bold text-xl" style={{ color: primary }}>{item.title}</h3>
@@ -446,7 +450,7 @@ function SectionRenderer({ section, theme }: { section: SiteSection; theme: Site
           <div className="max-w-5xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-10" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.heading || 'AI Tools'}</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {items.map((item: any, i: number) => (
+              {items.map((item: JsonRecord, i: number) => (
                 <div key={i} className="border border-slate-200 rounded-xl p-5 bg-white hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${primary}10` }}>
@@ -485,7 +489,7 @@ function SectionRenderer({ section, theme }: { section: SiteSection; theme: Site
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold mb-6" style={{ color: '#1f2937', fontFamily: theme.fontFamily }}>{data.title || 'Order History'}</h2>
             <div className="space-y-4">
-              {items.map((item: any, i: number) => (
+              {items.map((item: JsonRecord, i: number) => (
                 <div key={i} className="border border-slate-200 rounded-xl p-4 bg-white">
                   <div className="flex justify-between">
                     <span className="font-medium">Order #{item.id || i + 1}</span>

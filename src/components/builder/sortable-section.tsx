@@ -1,14 +1,15 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { cn } from '@/lib/utils'
-import { GripVertical, Trash2, Copy, Edit } from 'lucide-react'
+import { GripVertical, Trash2, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import type { JsonRecord } from './site-renderer'
 
 interface SortableSectionProps {
   section: {
     id: string
     type: string
-    data: Record<string, any>
+    data: JsonRecord
   }
   isSelected: boolean
   onSelect: () => void
@@ -61,7 +62,7 @@ export function SortableSection({ section, isSelected, onSelect, onDelete, onDup
   )
 }
 
-function SectionPreview({ type, data }: { type: string; data: Record<string, any> }) {
+function SectionPreview({ type, data }: { type: string; data: JsonRecord }) {
   switch (type) {
     case 'hero':
       return (
@@ -104,7 +105,7 @@ function SectionPreview({ type, data }: { type: string; data: Record<string, any
     case 'pricing':
       return (
         <div className="p-8 grid grid-cols-3 gap-4">
-          {(data.plans || [{ name: 'Basic', price: '$9' }, { name: 'Pro', price: '$29' }, { name: 'Enterprise', price: '$99' }]).map((plan: any, i: number) => (
+          {(data.plans || [{ name: 'Basic', price: '$9' }, { name: 'Pro', price: '$29' }, { name: 'Enterprise', price: '$99' }]).map((plan: JsonRecord, i: number) => (
             <div key={i} className={`p-6 rounded-lg border ${i === 1 ? 'border-primary bg-primary/5' : ''}`}>
               <h3 className="font-semibold mb-2">{plan.name}</h3>
               <div className="text-3xl font-bold mb-4">{plan.price}</div>
@@ -116,7 +117,7 @@ function SectionPreview({ type, data }: { type: string; data: Record<string, any
     case 'testimonials':
       return (
         <div className="p-8 space-y-4">
-          {(data.items || [{ name: 'John Doe', quote: 'Great product!' }]).map((item: any, i: number) => (
+          {(data.items || [{ name: 'John Doe', quote: 'Great product!' }]).map((item: JsonRecord, i: number) => (
             <div key={i} className="p-4 bg-muted/50 rounded-lg">
               <p className="italic mb-2">"{item.quote}"</p>
               <p className="text-sm font-medium">{item.name}</p>
@@ -127,7 +128,7 @@ function SectionPreview({ type, data }: { type: string; data: Record<string, any
     case 'faq':
       return (
         <div className="p-8 space-y-3">
-          {(data.items || [{ question: 'FAQ Question?', answer: 'FAQ Answer' }]).map((item: any, i: number) => (
+          {(data.items || [{ question: 'FAQ Question?', answer: 'FAQ Answer' }]).map((item: JsonRecord, i: number) => (
             <div key={i} className="p-4 border rounded-lg">
               <h4 className="font-medium">{item.question}</h4>
               <p className="text-sm text-muted-foreground mt-1">{item.answer}</p>
@@ -138,7 +139,7 @@ function SectionPreview({ type, data }: { type: string; data: Record<string, any
     case 'team':
       return (
         <div className="p-8 grid grid-cols-3 gap-4">
-          {(data.members || [{ name: 'Name', role: 'Role' }]).map((m: any, i: number) => (
+          {(data.members || [{ name: 'Name', role: 'Role' }]).map((m: JsonRecord, i: number) => (
             <div key={i} className="text-center">
               <div className="w-20 h-20 rounded-full bg-muted mx-auto mb-3" />
               <h4 className="font-medium">{m.name}</h4>
@@ -150,7 +151,7 @@ function SectionPreview({ type, data }: { type: string; data: Record<string, any
     case 'features':
       return (
         <div className="p-8 grid grid-cols-3 gap-6">
-          {(data.items || [{ title: 'Feature', description: 'Description' }]).map((f: any, i: number) => (
+          {(data.items || [{ title: 'Feature', description: 'Description' }]).map((f: JsonRecord, i: number) => (
             <div key={i}>
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
                 <span className="text-primary">✦</span>
@@ -173,7 +174,7 @@ function SectionPreview({ type, data }: { type: string; data: Record<string, any
     case 'stats':
       return (
         <div className="p-8 grid grid-cols-4 gap-4 text-center">
-          {(data.items || [{ label: 'Clients', value: '500+' }, { label: 'Projects', value: '1000+' }, { label: 'Awards', value: '50+' }, { label: 'Team', value: '100+' }]).map((s: any, i: number) => (
+          {(data.items || [{ label: 'Clients', value: '500+' }, { label: 'Projects', value: '1000+' }, { label: 'Awards', value: '50+' }, { label: 'Team', value: '100+' }]).map((s: JsonRecord, i: number) => (
             <div key={i}>
               <div className="text-3xl font-bold text-primary">{s.value}</div>
               <div className="text-sm text-muted-foreground">{s.label}</div>

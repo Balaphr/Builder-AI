@@ -27,7 +27,7 @@ export function RegisterPage() {
       await register(name, email, password)
       toast.success('Account created!', 'Welcome to AI Website Builder')
       navigate('/dashboard')
-    } catch (err) {
+    } catch {
       toast.error('Registration failed', 'Email may already be in use')
     } finally {
       setIsLoading(false)

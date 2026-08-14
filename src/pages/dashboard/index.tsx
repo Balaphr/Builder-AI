@@ -5,9 +5,9 @@ import { api } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { formatNumber, formatDate } from '@/lib/utils'
+import { formatNumber } from '@/lib/utils'
 import {
-  Globe, Sparkles, BarChart3, CreditCard,
+  Globe, Sparkles, CreditCard,
   ArrowUpRight, Plus, TrendingUp, Eye
 } from 'lucide-react'
 
@@ -19,8 +19,7 @@ export function DashboardPage() {
     pageViews: 0,
     aiCredits: user?.aiCredits || 0,
   })
-  const [recentWebsites, setRecentWebsites] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [recentWebsites, setRecentWebsites] = useState<{ id: string; title: string; description?: string; status?: string }[]>([])
 
   useEffect(() => {
     loadDashboard()
@@ -28,13 +27,11 @@ export function DashboardPage() {
 
   const loadDashboard = async () => {
     try {
-      const { websites } = await api.get<{ websites: any[] }>('/websites')
+      const { websites } = await api.get<{ websites: { id: string; title: string; description?: string; status?: string }[] }>('/websites')
       setRecentWebsites(websites.slice(0, 5))
       setStats((s) => ({ ...s, websites: websites.length }))
     } catch (err) {
       console.error(err)
-    } finally {
-      setIsLoading(false)
     }
   }
 

@@ -32,6 +32,28 @@ interface BuilderForm {
   isActive: boolean
 }
 
+interface Automation {
+  id: string
+  name?: string
+  website_id?: string
+  trigger_type: string
+  trigger_config?: Record<string, string>
+  actions?: Action[]
+  is_active?: number
+  last_run?: string
+}
+
+interface ActionResult {
+  status: string
+  action: string
+  detail?: string
+}
+
+interface WebsiteOption {
+  id: string
+  title: string
+}
+
 const TRIGGERS: { value: TriggerType; label: string }[] = [
   { value: 'form_submit', label: 'Form Submit' },
   { value: 'order_placed', label: 'Order Placed' },
@@ -81,13 +103,13 @@ const ACTION_FIELDS: Record<ActionType, { key: string; label: string; ph: string
 }
 
 export function AutomationPage() {
-  const [automations, setAutomations] = useState<any[]>([])
-  const [websites, setWebsites] = useState<any[]>([])
+  const [automations, setAutomations] = useState<Automation[]>([])
+  const [websites, setWebsites] = useState<WebsiteOption[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isOpen, setIsOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isRunning, setIsRunning] = useState<string | null>(null)
-  const [result, setResult] = useState<any[] | null>(null)
+  const [result, setResult] = useState<ActionResult[] | null>(null)
   const [form, setForm] = useState<BuilderForm>({
     id: null, name: '', websiteId: '', triggerType: 'form_submit', triggerConfig: {}, actions: [], isActive: true,
   })
@@ -95,8 +117,8 @@ export function AutomationPage() {
   const load = useCallback(async () => {
     try {
       const [{ automations }, { websites }] = await Promise.all([
-        api.get<{ automations: any[] }>('/automations'),
-        api.get<{ websites: any[] }>('/websites'),
+        api.get<{ automations: Automation[] }>('/automations'),
+        api.get<{ websites: WebsiteOption[] }>('/websites'),
       ])
       setAutomations(automations)
       setWebsites(websites)
@@ -121,14 +143,14 @@ export function AutomationPage() {
     setIsOpen(true)
   }
 
-  const openEdit = (a: any) => {
+  const openEdit = (a: Automation) => {
     setForm({
       id: a.id,
       name: a.name || '',
-      websiteId: a.website_id,
-      triggerType: a.trigger_type || 'form_submit',
+      websiteId: a.website_id || '',
+      triggerType: (a.trigger_type || 'form_submit') as TriggerType,
       triggerConfig: (a.trigger_config && typeof a.trigger_config === 'object' ? a.trigger_config : {}) || {},
-      actions: Array.isArray(a.actions) ? a.actions.map((x: any) => ({ type: x.type, config: x.config || {} })) : [],
+      actions: Array.isArray(a.actions) ? a.actions.map((x: Action) => ({ type: x.type, config: x.config || {} })) : [],
       isActive: !!a.is_active,
     })
     setResult(null)
@@ -140,7 +162,7 @@ export function AutomationPage() {
       await api.put(`/automations/${id}`, { isActive: !isActive })
       setAutomations((prev) => prev.map((a) => (a.id === id ? { ...a, is_active: !isActive ? 1 : 0 } : a)))
       toast.success(isActive ? 'Automation paused' : 'Automation activated')
-    } catch (err) {
+    } catch {
       toast.error('Failed to update')
     }
   }
@@ -150,19 +172,19 @@ const handleDelete = async (id: string) => {
       await api.delete(`/automations/${id}`)
       setAutomations((prev) => prev.filter((a) => a.id !== id))
       toast.success('Automation deleted')
-    } catch (err) {
+    } catch {
       toast.error('Failed to delete')
     }
   }
 
-  const handleRun = async (a: any) => {
+  const handleRun = async (a: Automation) => {
     setIsRunning(a.id)
     setResult(null)
     try {
-      const res = await api.post<{ results: any[] }>(`/automations/${a.id}/run`, {})
+      const res = await api.post<{ results: ActionResult[] }>(`/automations/${a.id}/run`, {})
       setResult(res.results)
       toast.success('Automation executed', `${res.results.length} action(s) ran`)
-    } catch (err) {
+    } catch {
       toast.error('Run failed')
     } finally {
       setIsRunning(null)
@@ -215,8 +237,8 @@ const handleDelete = async (id: string) => {
     }
   }
 
-  const triggerIcons: Record<string, any> = { form_submit: Mail, order_placed: MessageSquare, schedule: Zap, page_view: Eye, user_signup: Mail }
-  const actionIcons: Record<string, any> = { send_email: Mail, send_whatsapp: MessageSquare, post_social: MessageSquare, update_sheet: Settings, webhook: Webhook }
+  const triggerIcons: Record<string, React.ComponentType<{ className?: string }>> = { form_submit: Mail, order_placed: MessageSquare, schedule: Zap, page_view: Eye, user_signup: Mail }
+  const actionIcons: Record<string, React.ComponentType<{ className?: string }>> = { send_email: Mail, send_whatsapp: MessageSquare, post_social: MessageSquare, update_sheet: Settings, webhook: Webhook }
 
   return (
     <div className="space-y-6">
@@ -257,7 +279,7 @@ const handleDelete = async (id: string) => {
         <div className="space-y-4">
           {automations.map((automation) => {
             const TriggerIcon = triggerIcons[automation.trigger_type] || Zap
-            const actions: any[] = Array.isArray(automation.actions) ? automation.actions : []
+            const actions: Action[] = Array.isArray(automation.actions) ? automation.actions : []
             return (
               <Card key={automation.id}>
                 <CardContent className="p-6">
@@ -289,7 +311,7 @@ const handleDelete = async (id: string) => {
                       <Button variant="ghost" size="icon" onClick={() => openEdit(automation)} title="Edit">
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => toggleAutomation(automation.id, automation.is_active)} title="Toggle">
+                      <Button variant="ghost" size="icon" onClick={() => toggleAutomation(automation.id, automation.is_active ? 1 : 0)} title="Toggle">
                         {automation.is_active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                       </Button>
                       <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(automation.id)} title="Delete">
@@ -386,7 +408,7 @@ const handleDelete = async (id: string) => {
                   <Label>Trigger type</Label>
                   <select
                     value={form.triggerType}
-                    onChange={(e) => setForm({ ...form, triggerType: e.target.value as any, triggerConfig: {} })}
+                    onChange={(e) => setForm({ ...form, triggerType: e.target.value as TriggerType, triggerConfig: {} })}
                     className="w-full px-3 py-2 border rounded-md bg-background text-sm"
                   >
                     {TRIGGERS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}

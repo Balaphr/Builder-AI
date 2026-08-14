@@ -4,38 +4,48 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatDate, formatNumber } from '@/lib/utils'
-import { toast } from '@/components/ui/toast'
-import { Plus, ShoppingBag, Package, ShoppingCart, DollarSign } from 'lucide-react'
+import { Plus, Package, ShoppingCart, DollarSign } from 'lucide-react'
+
+interface ProductCard {
+  id: string
+  name: string
+  price: number
+  status: string
+}
+
+interface OrderCard {
+  id: string
+  total: number
+  status: string
+  created_at: string
+}
 
 export function EcommercePage() {
-  const [products, setProducts] = useState<any[]>([])
-  const [orders, setOrders] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [products, setProducts] = useState<ProductCard[]>([])
+  const [orders, setOrders] = useState<OrderCard[]>([])
 
   useEffect(() => { loadData() }, [])
 
   const loadData = async () => {
     try {
-      const { websites } = await api.get<{ websites: any[] }>('/websites')
+      const { websites } = await api.get<{ websites: { id: string }[] }>('/websites')
       if (websites.length > 0) {
         const [productsRes, ordersRes] = await Promise.all([
-          api.get<{ products: any[] }>(`/products?websiteId=${websites[0].id}`),
-          api.get<{ orders: any[] }>(`/orders?websiteId=${websites[0].id}`),
+          api.get<{ products: ProductCard[] }>(`/products?websiteId=${websites[0].id}`),
+          api.get<{ orders: OrderCard[] }>(`/orders?websiteId=${websites[0].id}`),
         ])
         setProducts(productsRes.products)
         setOrders(ordersRes.orders)
       }
     } catch (err) {
       console.error(err)
-    } finally {
-      setIsLoading(false)
     }
   }
 
   const stats = {
     totalProducts: products.length,
     totalOrders: orders.length,
-    totalRevenue: orders.reduce((sum: number, o: any) => sum + (o.total || 0), 0),
+    totalRevenue: orders.reduce((sum: number, o: OrderCard) => sum + (o.total || 0), 0),
   }
 
   return (

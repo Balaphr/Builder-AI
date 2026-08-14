@@ -145,7 +145,6 @@ media.delete('/:id', async (c) => {
 
 // Create folder
 media.post('/folder', async (c) => {
-  const db = c.env.DB
   const authHeader = c.req.header('Authorization')
 
   if (!authHeader?.startsWith('Bearer ')) {

@@ -4,27 +4,31 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { toast } from '@/components/ui/toast'
 import { Search, LayoutTemplate, Star } from 'lucide-react'
 
 const categories = ['All', 'Business', 'Restaurant', 'Portfolio', 'E-Commerce', 'Blog', 'SaaS', 'Agency', 'Healthcare', 'Education']
 
+interface TemplateCard {
+  id: string
+  name: string
+  description?: string
+  category: string
+  is_pro: number
+}
+
 export function TemplatesPage() {
-  const [templates, setTemplates] = useState<any[]>([])
+  const [templates, setTemplates] = useState<TemplateCard[]>([])
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('All')
-  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => { loadTemplates() }, [])
 
   const loadTemplates = async () => {
     try {
-      const { templates } = await api.get<{ templates: any[] }>('/templates')
+      const { templates } = await api.get<{ templates: TemplateCard[] }>('/templates')
       setTemplates(templates)
     } catch (err) {
       console.error(err)
-    } finally {
-      setIsLoading(false)
     }
   }
 

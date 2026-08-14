@@ -8,17 +8,17 @@ interface SectionEditorProps {
   section: {
     id: string
     type: string
-    data: Record<string, any>
-    styles?: Record<string, any>
+    data: Record<string, unknown>
+    styles?: Record<string, unknown>
   }
-  onUpdate: (data: Record<string, any>) => void
+  onUpdate: (data: Record<string, unknown>) => void
   onClose: () => void
 }
 
 export function SectionEditor({ section, onUpdate, onClose }: SectionEditorProps) {
   const [localData, setLocalData] = useState(section.data)
 
-  const update = (key: string, value: any) => {
+  const update = (key: string, value: unknown) => {
     const newData = { ...localData, [key]: value }
     setLocalData(newData)
     onUpdate(newData)
@@ -47,7 +47,7 @@ export function SectionEditor({ section, onUpdate, onClose }: SectionEditorProps
           <div className="space-y-2">
             <Label>Content</Label>
             <textarea
-              value={localData.content || ''}
+              value={typeof localData.content === 'string' ? localData.content : ''}
               onChange={(e) => update('content', e.target.value)}
               className="w-full h-40 p-3 border rounded-lg text-sm resize-none"
             />
@@ -64,22 +64,22 @@ export function SectionEditor({ section, onUpdate, onClose }: SectionEditorProps
         {section.type === 'pricing' && (
           <div className="space-y-4">
             <Label>Pricing Plans</Label>
-            {(localData.plans || []).map((plan: any, i: number) => (
+            {((localData.plans as Record<string, unknown>[] | undefined) || []).map((plan, i: number) => (
               <div key={i} className="p-3 border rounded-lg space-y-2">
                 <Field label="Name" value={plan.name} onChange={(v) => {
-                  const plans = [...(localData.plans || [])]
+                  const plans = [...((localData.plans as Record<string, unknown>[] | undefined) || [])]
                   plans[i] = { ...plans[i], name: v }
                   update('plans', plans)
                 }} />
                 <Field label="Price" value={plan.price} onChange={(v) => {
-                  const plans = [...(localData.plans || [])]
+                  const plans = [...((localData.plans as Record<string, unknown>[] | undefined) || [])]
                   plans[i] = { ...plans[i], price: v }
                   update('plans', plans)
                 }} />
               </div>
             ))}
             <Button variant="outline" size="sm" onClick={() => {
-              update('plans', [...(localData.plans || []), { name: 'New Plan', price: '$0', features: [] }])
+              update('plans', [...((localData.plans as Record<string, unknown>[] | undefined) || []), { name: 'New Plan', price: '$0', features: [] }])
             }}>
               + Add Plan
             </Button>
@@ -89,22 +89,22 @@ export function SectionEditor({ section, onUpdate, onClose }: SectionEditorProps
         {section.type === 'faq' && (
           <div className="space-y-4">
             <Label>FAQ Items</Label>
-            {(localData.items || []).map((item: any, i: number) => (
+            {((localData.items as Record<string, unknown>[] | undefined) || []).map((item, i: number) => (
               <div key={i} className="p-3 border rounded-lg space-y-2">
                 <Field label="Question" value={item.question} onChange={(v) => {
-                  const items = [...(localData.items || [])]
+                  const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                   items[i] = { ...items[i], question: v }
                   update('items', items)
                 }} />
                 <Field label="Answer" value={item.answer} onChange={(v) => {
-                  const items = [...(localData.items || [])]
+                  const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                   items[i] = { ...items[i], answer: v }
                   update('items', items)
                 }} />
               </div>
             ))}
             <Button variant="outline" size="sm" onClick={() => {
-              update('items', [...(localData.items || []), { question: '', answer: '' }])
+              update('items', [...((localData.items as Record<string, unknown>[] | undefined) || []), { question: '', answer: '' }])
             }}>
               + Add Item
             </Button>
@@ -129,32 +129,32 @@ export function SectionEditor({ section, onUpdate, onClose }: SectionEditorProps
         {section.type === 'jobs' && (
           <div className="space-y-4">
             <Label>Job Listings</Label>
-            {(localData.items || []).map((item: any, i: number) => (
+            {((localData.items as Record<string, unknown>[] | undefined) || []).map((item, i: number) => (
               <div key={i} className="p-3 border rounded-lg space-y-2">
                 <Field label="Title" value={item.title} onChange={(v) => {
-                  const items = [...(localData.items || [])]
+                  const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                   items[i] = { ...items[i], title: v }
                   update('items', items)
                 }} />
                 <Field label="Company" value={item.company} onChange={(v) => {
-                  const items = [...(localData.items || [])]
+                  const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                   items[i] = { ...items[i], company: v }
                   update('items', items)
                 }} />
                 <Field label="Location" value={item.location} onChange={(v) => {
-                  const items = [...(localData.items || [])]
+                  const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                   items[i] = { ...items[i], location: v }
                   update('items', items)
                 }} />
                 <Field label="Salary" value={item.salary} onChange={(v) => {
-                  const items = [...(localData.items || [])]
+                  const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                   items[i] = { ...items[i], salary: v }
                   update('items', items)
                 }} />
               </div>
             ))}
             <Button variant="outline" size="sm" onClick={() => {
-              update('items', [...(localData.items || []), { title: 'Job Title', company: 'Company', location: 'Location', salary: 'Salary' }])
+              update('items', [...((localData.items as Record<string, unknown>[] | undefined) || []), { title: 'Job Title', company: 'Company', location: 'Location', salary: 'Salary' }])
             }}>
               + Add Job
             </Button>
@@ -164,32 +164,32 @@ export function SectionEditor({ section, onUpdate, onClose }: SectionEditorProps
         {section.type === 'property' && (
           <div className="space-y-4">
             <Label>Property Listings</Label>
-            {(localData.items || []).map((item: any, i: number) => (
+            {((localData.items as Record<string, unknown>[] | undefined) || []).map((item, i: number) => (
               <div key={i} className="p-3 border rounded-lg space-y-2">
                 <Field label="Title" value={item.title} onChange={(v) => {
-                  const items = [...(localData.items || [])]
+                  const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                   items[i] = { ...items[i], title: v }
                   update('items', items)
                 }} />
                 <Field label="Price" value={item.price} onChange={(v) => {
-                  const items = [...(localData.items || [])]
+                  const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                   items[i] = { ...items[i], price: v }
                   update('items', items)
                 }} />
                 <Field label="Location" value={item.location} onChange={(v) => {
-                  const items = [...(localData.items || [])]
+                  const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                   items[i] = { ...items[i], location: v }
                   update('items', items)
                 }} />
                 <Field label="Bedrooms" value={item.bedrooms} onChange={(v) => {
-                  const items = [...(localData.items || [])]
+                  const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                   items[i] = { ...items[i], bedrooms: v }
                   update('items', items)
                 }} />
               </div>
             ))}
             <Button variant="outline" size="sm" onClick={() => {
-              update('items', [...(localData.items || []), { title: 'Property Name', price: '$0', location: 'Location', bedrooms: '3' }])
+              update('items', [...((localData.items as Record<string, unknown>[] | undefined) || []), { title: 'Property Name', price: '$0', location: 'Location', bedrooms: '3' }])
             }}>
               + Add Property
             </Button>
@@ -199,27 +199,27 @@ export function SectionEditor({ section, onUpdate, onClose }: SectionEditorProps
         {section.type === 'products' && (
           <div className="space-y-4">
             <Label>Products</Label>
-            {(localData.items || []).map((item: any, i: number) => (
+            {((localData.items as Record<string, unknown>[] | undefined) || []).map((item, i: number) => (
               <div key={i} className="p-3 border rounded-lg space-y-2">
                 <Field label="Name" value={item.name} onChange={(v) => {
-                  const items = [...(localData.items || [])]
+                  const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                   items[i] = { ...items[i], name: v }
                   update('items', items)
                 }} />
                 <Field label="Price" value={item.price} onChange={(v) => {
-                  const items = [...(localData.items || [])]
+                  const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                   items[i] = { ...items[i], price: v }
                   update('items', items)
                 }} />
                 <Field label="Category" value={item.category} onChange={(v) => {
-                  const items = [...(localData.items || [])]
+                  const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                   items[i] = { ...items[i], category: v }
                   update('items', items)
                 }} />
               </div>
             ))}
             <Button variant="outline" size="sm" onClick={() => {
-              update('items', [...(localData.items || []), { name: 'Product Name', price: '$0', category: 'Category' }])
+              update('items', [...((localData.items as Record<string, unknown>[] | undefined) || []), { name: 'Product Name', price: '$0', category: 'Category' }])
             }}>
               + Add Product
             </Button>
@@ -229,22 +229,22 @@ export function SectionEditor({ section, onUpdate, onClose }: SectionEditorProps
         {section.type === 'blog' && (
           <div className="space-y-4">
             <Label>Blog Posts</Label>
-            {(localData.items || []).map((item: any, i: number) => (
+            {((localData.items as Record<string, unknown>[] | undefined) || []).map((item, i: number) => (
               <div key={i} className="p-3 border rounded-lg space-y-2">
                 <Field label="Title" value={item.title} onChange={(v) => {
-                  const items = [...(localData.items || [])]
+                  const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                   items[i] = { ...items[i], title: v }
                   update('items', items)
                 }} />
                 <Field label="Category" value={item.category} onChange={(v) => {
-                  const items = [...(localData.items || [])]
+                  const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                   items[i] = { ...items[i], category: v }
                   update('items', items)
                 }} />
               </div>
             ))}
             <Button variant="outline" size="sm" onClick={() => {
-              update('items', [...(localData.items || []), { title: 'Blog Post Title', category: 'Category' }])
+              update('items', [...((localData.items as Record<string, unknown>[] | undefined) || []), { title: 'Blog Post Title', category: 'Category' }])
             }}>
               + Add Post
             </Button>
@@ -254,22 +254,22 @@ export function SectionEditor({ section, onUpdate, onClose }: SectionEditorProps
         {section.type === 'tools' && (
           <div className="space-y-4">
             <Label>AI Tools</Label>
-            {(localData.items || []).map((item: any, i: number) => (
+            {((localData.items as Record<string, unknown>[] | undefined) || []).map((item, i: number) => (
               <div key={i} className="p-3 border rounded-lg space-y-2">
                 <Field label="Name" value={item.name} onChange={(v) => {
-                  const items = [...(localData.items || [])]
+                  const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                   items[i] = { ...items[i], name: v }
                   update('items', items)
                 }} />
                 <Field label="Category" value={item.category} onChange={(v) => {
-                  const items = [...(localData.items || [])]
+                  const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                   items[i] = { ...items[i], category: v }
                   update('items', items)
                 }} />
               </div>
             ))}
             <Button variant="outline" size="sm" onClick={() => {
-              update('items', [...(localData.items || []), { name: 'AI Tool Name', category: 'Category' }])
+              update('items', [...((localData.items as Record<string, unknown>[] | undefined) || []), { name: 'AI Tool Name', category: 'Category' }])
             }}>
               + Add Tool
             </Button>
@@ -279,27 +279,27 @@ export function SectionEditor({ section, onUpdate, onClose }: SectionEditorProps
         {section.type === 'menu' && (
           <div className="space-y-4">
             <Label>Menu Items</Label>
-            {(localData.items || []).map((item: any, i: number) => (
+            {((localData.items as Record<string, unknown>[] | undefined) || []).map((item, i: number) => (
               <div key={i} className="p-3 border rounded-lg space-y-2">
                 <Field label="Name" value={item.name} onChange={(v) => {
-                  const items = [...(localData.items || [])]
+                  const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                   items[i] = { ...items[i], name: v }
                   update('items', items)
                 }} />
                 <Field label="Price" value={item.price} onChange={(v) => {
-                  const items = [...(localData.items || [])]
+                  const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                   items[i] = { ...items[i], price: v }
                   update('items', items)
                 }} />
                 <Field label="Category" value={item.category} onChange={(v) => {
-                  const items = [...(localData.items || [])]
+                  const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                   items[i] = { ...items[i], category: v }
                   update('items', items)
                 }} />
               </div>
             ))}
             <Button variant="outline" size="sm" onClick={() => {
-              update('items', [...(localData.items || []), { name: 'Item Name', price: '$0', category: 'Category' }])
+              update('items', [...((localData.items as Record<string, unknown>[] | undefined) || []), { name: 'Item Name', price: '$0', category: 'Category' }])
             }}>
               + Add Menu Item
             </Button>
@@ -309,22 +309,22 @@ export function SectionEditor({ section, onUpdate, onClose }: SectionEditorProps
         {section.type === 'stats' && (
           <div className="space-y-4">
             <Label>Stats</Label>
-            {(localData.items || []).map((item: any, i: number) => (
+            {((localData.items as Record<string, unknown>[] | undefined) || []).map((item, i: number) => (
               <div key={i} className="flex gap-2">
                 <Input
-                  value={item.label}
+                  value={(item.label as string) || ''}
                   placeholder="Label"
                   onChange={(e) => {
-                    const items = [...(localData.items || [])]
+                    const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                     items[i] = { ...items[i], label: e.target.value }
                     update('items', items)
                   }}
                 />
                 <Input
-                  value={item.value}
+                  value={(item.value as string) || ''}
                   placeholder="Value"
                   onChange={(e) => {
-                    const items = [...(localData.items || [])]
+                    const items = [...((localData.items as Record<string, unknown>[] | undefined) || [])]
                     items[i] = { ...items[i], value: e.target.value }
                     update('items', items)
                   }}
@@ -332,7 +332,7 @@ export function SectionEditor({ section, onUpdate, onClose }: SectionEditorProps
               </div>
             ))}
             <Button variant="outline" size="sm" onClick={() => {
-              update('items', [...(localData.items || []), { label: '', value: '' }])
+              update('items', [...((localData.items as Record<string, unknown>[] | undefined) || []), { label: '', value: '' }])
             }}>
               + Add Stat
             </Button>
@@ -347,12 +347,12 @@ export function SectionEditor({ section, onUpdate, onClose }: SectionEditorProps
             <div className="flex gap-2">
               <input
                 type="color"
-                value={section.styles?.backgroundColor || '#ffffff'}
+                value={((section.styles?.backgroundColor as string) || '#ffffff')}
                 onChange={(e) => onUpdate({ ...localData, _styles: { ...section.styles, backgroundColor: e.target.value } })}
                 className="w-10 h-10 rounded border cursor-pointer"
               />
               <Input
-                value={section.styles?.backgroundColor || ''}
+                value={((section.styles?.backgroundColor as string) || '')}
                 placeholder="#ffffff"
                 className="flex-1"
               />
@@ -364,11 +364,11 @@ export function SectionEditor({ section, onUpdate, onClose }: SectionEditorProps
   )
 }
 
-function Field({ label, value, onChange }: { label: string; value?: string; onChange: (v: string) => void }) {
+function Field({ label, value, onChange }: { label: string; value?: unknown; onChange: (v: string) => void }) {
   return (
     <div className="space-y-2">
       <Label className="text-xs">{label}</Label>
-      <Input value={value || ''} onChange={(e) => onChange(e.target.value)} placeholder={label} />
+      <Input value={typeof value === 'string' ? value : ''} onChange={(e) => onChange(e.target.value)} placeholder={label} />
     </div>
   )
 }

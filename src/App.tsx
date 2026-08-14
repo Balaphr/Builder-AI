@@ -23,6 +23,11 @@ import { SettingsPage } from '@/pages/settings'
 import { BlogPage } from '@/pages/blog'
 import { EcommercePage } from '@/pages/ecommerce'
 import { AdminPage } from '@/pages/admin'
+import { SearchPage } from '@/pages/search'
+import { AssistPage } from '@/pages/assist'
+import { AccountsPage } from '@/pages/accounts'
+import { ReportsPage } from '@/pages/reports'
+import { CreatePage } from '@/pages/create'
 import { LoadingScreen } from '@/components/ui/loading'
 import { PublicSitePage } from '@/pages/public/site'
 
@@ -63,6 +68,11 @@ function AppRoutes() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="websites" element={<WebsitesPage />} />
+        <Route path="create" element={<CreatePage />} />
+        <Route path="search" element={<SearchPage />} />
+        <Route path="assist" element={<AssistPage />} />
+        <Route path="reports" element={<ReportsPage />} />
+        <Route path="accounts" element={<AccountsPage />} />
         <Route path="builder" element={<AIBuilderPage />} />
         <Route path="builder/:id" element={<BuilderEditor />} />
         <Route path="builder/:id/preview" element={<BuilderPreview />} />

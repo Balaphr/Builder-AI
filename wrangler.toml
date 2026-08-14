@@ -10,6 +10,7 @@ ENVIRONMENT = "development"
 binding = "DB"
 database_name = "ai-builder-db"
 database_id = "your-database-id"
+migrations_dir = "db/migrations"
 
 [[r2_buckets]]
 binding = "R2"

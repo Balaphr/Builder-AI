@@ -8,20 +8,32 @@ import { toast } from '@/components/ui/toast'
 import { copyToClipboard } from '@/lib/utils'
 import { Globe, Plus, Trash2, CheckCircle, AlertCircle, Copy } from 'lucide-react'
 
+interface DomainCard {
+  id: string
+  domain: string
+  website_title?: string
+  status: string
+  ssl?: number | boolean
+}
+
+interface WebsiteOption {
+  id: string
+  title: string
+}
+
 export function DomainsPage() {
-  const [domains, setDomains] = useState<any[]>([])
+  const [domains, setDomains] = useState<DomainCard[]>([])
   const [domain, setDomain] = useState('')
   const [websiteId, setWebsiteId] = useState('')
-  const [websites, setWebsites] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [websites, setWebsites] = useState<WebsiteOption[]>([])
 
   useEffect(() => { loadData() }, [])
 
   const loadData = async () => {
     try {
       const [domainsRes, websitesRes] = await Promise.all([
-        api.get<{ domains: any[] }>('/domains'),
-        api.get<{ websites: any[] }>('/websites'),
+        api.get<{ domains: DomainCard[] }>('/domains'),
+        api.get<{ websites: WebsiteOption[] }>('/websites'),
       ])
       setDomains(domainsRes.domains)
       setWebsites(websitesRes.websites)
@@ -30,8 +42,6 @@ export function DomainsPage() {
       }
     } catch (err) {
       console.error(err)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -54,7 +64,7 @@ export function DomainsPage() {
       toast.success('Domain added')
       setDomain('')
       loadData()
-    } catch (err) {
+    } catch {
       toast.error('Failed to add domain')
     }
   }
@@ -65,7 +75,7 @@ export function DomainsPage() {
       await api.delete(`/domains/${id}`)
       setDomains((d) => d.filter((dom) => dom.id !== id))
       toast.success('Domain removed')
-    } catch (err) {
+    } catch {
       toast.error('Failed to remove domain')
     }
   }
@@ -75,7 +85,7 @@ export function DomainsPage() {
       await api.post(`/domains/${id}/verify`)
       toast.success('Domain verified!')
       loadData()
-    } catch (err) {
+    } catch {
       toast.error('Verification failed')
     }
   }

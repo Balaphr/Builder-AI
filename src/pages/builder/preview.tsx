@@ -9,7 +9,7 @@ import { ArrowLeft, Loader2, Monitor } from 'lucide-react'
 export function BuilderPreview() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [website, setWebsite] = useState<any>(null)
+  const [website, setWebsite] = useState<{ title?: string; theme?: string | Record<string, unknown> | null } | null>(null)
   const [pages, setPages] = useState<RenderPage[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -19,12 +19,12 @@ export function BuilderPreview() {
     const load = async () => {
       try {
         const [{ website: site }, { pages: p }] = await Promise.all([
-          api.get<{ website: any }>(`/websites/${id}`),
+          api.get<{ website: { title?: string; theme?: string | Record<string, unknown> | null } }>(`/websites/${id}`),
           api.get<{ pages: RenderPage[] }>(`/pages?websiteId=${id}`),
         ])
         setWebsite(site)
         setPages(p || [])
-      } catch (err) {
+      } catch {
         toast.error('Failed to load website for preview')
         navigate(`/dashboard/builder/${id}`)
       } finally {

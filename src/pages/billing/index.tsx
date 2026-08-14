@@ -5,28 +5,37 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/components/ui/toast'
-import { CreditCard, Check, Star, Zap, Building2, Globe } from 'lucide-react'
+import { Check, Star, Zap, Building2, Globe } from 'lucide-react'
+
+interface BillingPlan {
+  id: string
+  name: string
+  price: number
+  features: string[]
+  isPopular?: boolean
+}
+
+interface Subscription {
+  plan: string
+}
 
 export function BillingPage() {
   const { user } = useAuth()
-  const [plans, setPlans] = useState<any[]>([])
-  const [subscription, setSubscription] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [plans, setPlans] = useState<BillingPlan[]>([])
+  const [subscription, setSubscription] = useState<Subscription | null>(null)
 
   useEffect(() => { loadBilling() }, [])
 
   const loadBilling = async () => {
     try {
       const [plansRes, subRes] = await Promise.all([
-        api.get<{ plans: any[] }>('/billing/plans'),
-        api.get<{ subscription: any }>('/billing/subscription'),
+        api.get<{ plans: BillingPlan[] }>('/billing/plans'),
+        api.get<{ subscription: Subscription }>('/billing/subscription'),
       ])
       setPlans(plansRes.plans)
       setSubscription(subRes.subscription)
     } catch (err) {
       console.error(err)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -37,12 +46,12 @@ export function BillingPage() {
         paymentMethod: 'stripe',
       })
       window.location.href = checkoutUrl
-    } catch (err) {
+    } catch {
       toast.error('Failed to start checkout')
     }
   }
 
-  const planIcons: Record<string, any> = {
+  const planIcons: Record<string, React.ComponentType<{ className?: string }>> = {
     free: Globe,
     pro: Zap,
     business: Building2,

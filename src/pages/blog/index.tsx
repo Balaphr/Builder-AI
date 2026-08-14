@@ -24,6 +24,25 @@ interface PostForm {
   publishedAt: string
 }
 
+interface Post {
+  id: string
+  website_id: string
+  title: string
+  excerpt?: string
+  content?: string
+  category?: string
+  tags?: string | string[]
+  featured_image?: string
+  status: string
+  published_at?: string
+  created_at?: string
+}
+
+interface WebsiteOption {
+  id: string
+  title: string
+}
+
 const emptyForm = (websiteId: string): PostForm => ({
   websiteId,
   title: '',
@@ -36,7 +55,7 @@ const emptyForm = (websiteId: string): PostForm => ({
   publishedAt: '',
 })
 
-function postToForm(post: any): PostForm {
+function postToForm(post: Post): PostForm {
   const publishedAt = post.published_at
     ? post.published_at.replace(' ', 'T').slice(0, 16)
     : ''
@@ -46,9 +65,9 @@ function postToForm(post: any): PostForm {
     excerpt: post.excerpt || '',
     content: post.content || '',
     category: post.category || '',
-    tags: Array.isArray(post.tags) ? post.tags.join(', ') : (post.tags || '').replace(/[\[\]"]/g, ''),
+    tags: Array.isArray(post.tags) ? post.tags.join(', ') : (post.tags || '').replace(/[[]"]/g, ''),
     featuredImage: post.featured_image || '',
-    status: post.status || 'draft',
+    status: (post.status || 'draft') as PostForm['status'],
     publishedAt,
   }
 }
@@ -71,22 +90,22 @@ function formToPayload(form: PostForm) {
 }
 
 export function BlogPage() {
-  const [posts, setPosts] = useState<any[]>([])
-  const [websites, setWebsites] = useState<any[]>([])
+  const [posts, setPosts] = useState<Post[]>([])
+  const [websites, setWebsites] = useState<WebsiteOption[]>([])
   const [websiteId, setWebsiteId] = useState('')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
-  const [editing, setEditing] = useState<any | null>(null)
+  const [editing, setEditing] = useState<Post | null>(null)
   const [form, setForm] = useState<PostForm>(emptyForm(''))
   const [isUploadingImage, setIsUploadingImage] = useState(false)
 
   const loadPosts = useCallback(async (wid: string) => {
     if (!wid) return
     try {
-      const { posts } = await api.get<{ posts: any[] }>(`/blog?websiteId=${wid}`)
+      const { posts } = await api.get<{ posts: Post[] }>(`/blog?websiteId=${wid}`)
       setPosts(posts)
     } catch (err) {
       console.error(err)
@@ -95,7 +114,7 @@ export function BlogPage() {
 
   const loadData = useCallback(async () => {
     try {
-      const { websites } = await api.get<{ websites: any[] }>('/websites')
+      const { websites } = await api.get<{ websites: WebsiteOption[] }>('/websites')
       setWebsites(websites)
       const wid = websites[0]?.id || ''
       setWebsiteId(wid)
@@ -122,7 +141,7 @@ export function BlogPage() {
     setIsOpen(true)
   }
 
-  const openEdit = (post: any) => {
+  const openEdit = (post: Post) => {
     setEditing(post)
     setForm(postToForm(post))
     setIsOpen(true)
@@ -162,18 +181,18 @@ export function BlogPage() {
       await api.delete(`/blog/${id}`)
       setPosts((prev) => prev.filter((p) => p.id !== id))
       toast.success('Post deleted')
-    } catch (err) {
+    } catch {
       toast.error('Failed to delete post')
     }
   }
 
-  const togglePublish = async (post: any) => {
+  const togglePublish = async (post: Post) => {
     try {
       const next = post.status === 'published' ? 'draft' : 'published'
       await api.put(`/blog/${post.id}`, { status: next })
       setPosts((prev) => prev.map((p) => (p.id === post.id ? { ...p, status: next } : p)))
       toast.success(next === 'published' ? 'Post published' : 'Post moved to draft')
-    } catch (err) {
+    } catch {
       toast.error('Failed to update status')
     }
   }
@@ -183,10 +202,10 @@ export function BlogPage() {
     if (!file) return
     setIsUploadingImage(true)
     try {
-      const res = await api.upload<{ file: any }>('/media/upload', file)
+      const res = await api.upload<{ file: { url: string } }>('/media/upload', file)
       setForm((f) => ({ ...f, featuredImage: res.file.url }))
       toast.success('Image uploaded')
-    } catch (err) {
+    } catch {
       toast.error('Image upload failed')
     } finally {
       setIsUploadingImage(false)
@@ -308,7 +327,7 @@ export function BlogPage() {
                     </td>
                     <td className="p-4">{statusBadge(post.status)}</td>
                     <td className="p-4 text-sm text-muted-foreground">
-                      {post.published_at ? formatDate(post.published_at) : formatDate(post.created_at)}
+                      {post.published_at ? formatDate(post.published_at) : post.created_at ? formatDate(post.created_at) : '—'}
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-1">
@@ -358,7 +377,7 @@ export function BlogPage() {
                 <Label>Status</Label>
                 <select
                   value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value as any })}
+                  onChange={(e) => setForm({ ...form, status: e.target.value as PostForm['status'] })}
                   className="w-full px-3 py-2 border rounded-md bg-background text-sm"
                 >
                   <option value="draft">Draft</option>

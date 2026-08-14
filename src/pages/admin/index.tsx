@@ -1,30 +1,42 @@
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatNumber, formatDate } from '@/lib/utils'
-import { Shield, Users, Globe, CreditCard, BarChart3, Settings } from 'lucide-react'
+import { Shield, Users, Globe, BarChart3, Settings } from 'lucide-react'
+
+interface AdminStats {
+  totalUsers: number
+  totalWebsites: number
+  publishedWebsites: number
+  totalTemplates: number
+}
+
+interface AdminUser {
+  id: string
+  name: string
+  email: string
+  role: string
+  plan: string
+  created_at: string
+}
 
 export function AdminPage() {
-  const [stats, setStats] = useState<any>(null)
-  const [users, setUsers] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [stats, setStats] = useState<AdminStats | null>(null)
+  const [users, setUsers] = useState<AdminUser[]>([])
 
   useEffect(() => { loadAdmin() }, [])
 
   const loadAdmin = async () => {
     try {
       const [statsRes, usersRes] = await Promise.all([
-        api.get<{ stats: any }>('/admin/stats'),
-        api.get<{ users: any[] }>('/admin/users'),
+        api.get<{ stats: AdminStats }>('/admin/stats'),
+        api.get<{ users: AdminUser[] }>('/admin/users'),
       ])
       setStats(statsRes.stats)
       setUsers(usersRes.users)
     } catch (err) {
       console.error(err)
-    } finally {
-      setIsLoading(false)
     }
   }
 

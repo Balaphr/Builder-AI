@@ -1,5 +1,4 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { X } from 'lucide-react'
 import {
   Type, Image, Layout, CreditCard, MessageSquare,
   HelpCircle, Users, Sparkles, BarChart3, FormInput,
@@ -32,7 +31,7 @@ const baseSections = [
   { type: 'spacer', name: 'Spacer', icon: ArrowUpDown, description: 'Empty space' },
 ]
 
-const moduleSections: Record<string, { type: string; name: string; icon: React.ComponentType<any>; description: string }[]> = {
+const moduleSections: Record<string, { type: string; name: string; icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; description: string }[]> = {
   jobs: [
     { type: 'jobs', name: 'Job Listings', icon: Briefcase, description: 'Display job listings with filters' },
     { type: 'timeline', name: 'Application Process', icon: Table, description: 'Show application timeline' },
@@ -78,7 +77,9 @@ const moduleSections: Record<string, { type: string; name: string; icon: React.C
 }
 
 export function SectionPicker({ onSelect, onClose, enabledModules = [] }: SectionPickerProps) {
-  const sectionGroups = [{ name: 'General', sections: baseSections }]
+  const sectionGroups: { name: string; sections: { type: string; name: string; icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; description: string }[] }[] = [
+    { name: 'General', sections: baseSections },
+  ]
 
   enabledModules.forEach((mod) => {
     if (moduleSections[mod]) {

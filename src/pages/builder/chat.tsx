@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card } from '@/components/ui/card'
 import { toast } from '@/components/ui/toast'
 import { Send, Sparkles, ChevronLeft, Loader2, Bot, User, Languages } from 'lucide-react'
 import {

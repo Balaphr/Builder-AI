@@ -23,6 +23,9 @@ import { publicRoutes } from './routes/public'
 import { websiteTypeRoutes } from './routes/website-types'
 import { moduleRoutes } from './routes/modules'
 import { moduleDataRoutes } from './routes/module-data'
+import { accountRoutes } from './routes/accounts'
+import { searchRoutes } from './routes/search'
+import { versionRoutes } from './routes/versions'
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -63,6 +66,9 @@ app.route('/api/public', publicRoutes)
 app.route('/api/website-types', websiteTypeRoutes)
 app.route('/api/modules', moduleRoutes)
 app.route('/api/module-data', moduleDataRoutes)
+app.route('/api/accounts', accountRoutes)
+app.route('/api/search', searchRoutes)
+app.route('/api/versions', versionRoutes)
 
 // 404 handler
 app.notFound((c) => {

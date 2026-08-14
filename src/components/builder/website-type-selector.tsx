@@ -38,7 +38,7 @@ export function WebsiteTypeSelector({ onSelect, onCancel, initialType, initialMo
   }
 
   const getIcon = (iconName: string) => {
-    const Icon = (LucideIcons as Record<string, React.ComponentType<any>>)[iconName]
+    const Icon = (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>>)[iconName]
     return Icon || LucideIcons.Box
   }
 

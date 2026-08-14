@@ -11,6 +11,11 @@ import type { WebsiteType } from '@/lib/website-types'
 
 type GenerationStep = 'idle' | 'selecting-type' | 'analyzing' | 'generating' | 'saving'
 
+interface GeneratedData {
+  title?: string
+  pages?: { title?: string; slug?: string }[]
+}
+
 const generationSteps = [
   { id: 'analyzing' as GenerationStep, label: 'Analyzing requirements' },
   { id: 'generating' as GenerationStep, label: 'Generating website structure' },
@@ -91,7 +96,7 @@ export function AIBuilderPage() {
     try {
       setStep('analyzing')
       const planResponse = await withRetry(() =>
-        api.post<{ plan?: any; message?: string }>('/ai/generate-plan', {
+        api.post<{ plan?: GeneratedData; message?: string }>('/ai/generate-plan', {
           prompt,
           websiteType: selectedType.id,
           modules: enabledModules,
@@ -100,16 +105,16 @@ export function AIBuilderPage() {
 
       setStep('generating')
       const response = await withRetry(() =>
-        api.post<{ data: any; generated?: boolean; message?: string }>('/ai/generate-website', {
+        api.post<{ data: GeneratedData; generated?: boolean; message?: string }>('/ai/generate-website', {
           prompt,
           websiteType: selectedType.id,
           modules: enabledModules,
           plan: planResponse.plan,
         })
       )
-      const data = response.data || (planResponse.plan as any) || {}
+      const data = response.data || planResponse.plan || {}
 
-      const { website } = await api.post<{ website: any }>('/websites', {
+      const { website } = await api.post<{ website: { id: string } }>('/websites', {
         title: data.title || selectedType.name + ' Website',
         description: prompt,
         type: selectedType.id,
@@ -181,7 +186,7 @@ export function AIBuilderPage() {
     setStep('idle')
   }
 
-  if (selectedType && step === 'idle') {
+  if (selectedType) {
     return (
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="flex items-center justify-between">

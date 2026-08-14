@@ -167,3 +167,118 @@ export function slugify(text: string): string {
     .replace(/[\s_]+/g, '-')
     .replace(/^-+|-+$/g, '')
 }
+
+/**
+ * Fetch a full user row (including account_type, is_disabled and permissions).
+ * Returns null when the user does not exist.
+ */
+export async function getUser(
+  db: Env['DB'],
+  userId: string
+): Promise<Record<string, unknown> | null> {
+  return db.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first()
+}
+
+/**
+ * Resolve the effective permission set for a user.
+ * Admins and users with account_type 'admin' implicitly have "*".
+ * Otherwise the union of the user's own permissions (users.permissions) is used.
+ */
+export async function getPermissionSet(
+  db: Env['DB'],
+  userId: string
+): Promise<string[]> {
+  const user = await getUser(db, userId)
+  if (!user) return []
+  if (user.role === 'admin') return ['*']
+  let perms: string[] = []
+  try { perms = JSON.parse((user.permissions as string) || '[]') } catch { perms = [] }
+  return perms
+}
+
+/**
+ * Check whether a user is allowed to perform an action.
+ * Returns true for admins / "*" permission holders.
+ */
+export async function can(
+  db: Env['DB'],
+  userId: string,
+  permission: string
+): Promise<boolean> {
+  const perms = await getPermissionSet(db, userId)
+  if (perms.includes('*')) return true
+  return perms.includes(permission)
+}
+
+/**
+ * Determine whether a user may access a website.
+ * Owners always have full access. Otherwise the user must have an explicit
+ * assignment in account_websites (sub/test/custom accounts).
+ */
+export async function canAccessWebsite(
+  db: Env['DB'],
+  userId: string,
+  websiteId: string,
+  permission: string = 'website.edit'
+): Promise<{ ok: boolean; role: 'owner' | 'assigned' | 'none' }> {
+  const website = await db
+    .prepare('SELECT user_id FROM websites WHERE id = ?')
+    .bind(websiteId)
+    .first()
+  if (!website) return { ok: false, role: 'none' }
+
+  if (website.user_id === userId) return { ok: true, role: 'owner' }
+
+  const user = await getUser(db, userId)
+  if (user?.role === 'admin' || user?.account_type === 'admin') {
+    return { ok: true, role: 'owner' }
+  }
+
+  const assignment = await db
+    .prepare('SELECT permissions FROM account_websites WHERE user_id = ? AND website_id = ?')
+    .bind(userId, websiteId)
+    .first()
+
+  if (!assignment) return { ok: false, role: 'none' }
+
+  let perms: string[] = []
+  try { perms = JSON.parse((assignment.permissions as string) || '[]') } catch { perms = [] }
+  if (perms.includes('*') || perms.includes(permission)) {
+    return { ok: true, role: 'assigned' }
+  }
+  return { ok: false, role: 'none' }
+}
+
+/**
+ * Write an audit log entry. Never throws.
+ */
+export async function auditLog(
+  db: Env['DB'],
+  entry: {
+    userId?: string | null
+    action: string
+    resourceType?: string
+    resourceId?: string
+    details?: Record<string, unknown>
+    ipAddress?: string
+  }
+): Promise<void> {
+  try {
+    await db
+      .prepare(
+        'INSERT INTO audit_logs (id, user_id, action, resource_type, resource_id, details, ip_address) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      )
+      .bind(
+        generateId(),
+        entry.userId || null,
+        entry.action,
+        entry.resourceType || null,
+        entry.resourceId || null,
+        JSON.stringify(entry.details || {}),
+        entry.ipAddress || null
+      )
+      .run()
+  } catch {
+    // Audit logging must never break the main flow.
+  }
+}

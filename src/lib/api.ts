@@ -110,3 +110,65 @@ class ApiClient {
 
 export const api = new ApiClient(API_URL)
 export default api
+
+import type {
+  SearchResponse,
+  UserAccount,
+  Permission,
+  Role,
+  VersionListResponse,
+  DraftVersion,
+  PublishedVersion,
+} from '@/types'
+
+export const accountsApi = {
+  list: (params?: Record<string, string>) =>
+    api.get<{ accounts: UserAccount[]; pagination: { page: number; limit: number; total: number; pages: number } }>('/accounts', params),
+  get: (id: string) => api.get<{ account: UserAccount }>(`/accounts/${id}`),
+  create: (body: {
+    name: string
+    email: string
+    password: string
+    accountType: string
+    role?: string
+    permissions?: string[]
+    websites?: { websiteId: string; permissions?: string[] }[]
+    plan?: string
+  }) => api.post<{ account: { id: string; email: string; name: string; accountType: string } }>('/accounts', body),
+  update: (id: string, body: Record<string, unknown>) =>
+    api.put<{ message: string }>(`/accounts/${id}`, body),
+  assignWebsites: (id: string, websites: { websiteId: string; permissions?: string[] }[]) =>
+    api.put<{ message: string }>(`/accounts/${id}/websites`, { websites }),
+  disable: (id: string, isDisabled: boolean) =>
+    api.post<{ message: string }>(`/accounts/${id}/disable`, { isDisabled }),
+  remove: (id: string) => api.delete<{ message: string }>(`/accounts/${id}`),
+  permissions: () => api.get<{ permissions: Permission[]; categories: string[] }>('/accounts/permissions'),
+  roles: () => api.get<{ roles: Role[] }>('/accounts/roles'),
+}
+
+export const searchApi = {
+  global: (q: string) => api.post<SearchResponse>('/search', { q }),
+}
+
+export const versionsApi = {
+  list: (websiteId: string) => api.get<VersionListResponse>(`/versions/${websiteId}`),
+  saveDraft: (
+    websiteId: string,
+    body: {
+      label?: string
+      pages?: { id: string; title: string; slug: string; content: unknown; status?: string }[]
+      settings?: Record<string, unknown>
+      theme?: Record<string, unknown>
+    }
+  ) => api.post<{ version: number; message: string }>(`/versions/${websiteId}/draft`, body),
+  publish: (websiteId: string) =>
+    api.post<{ version: number; message: string; liveUrl: string }>(`/versions/${websiteId}/publish`),
+  unpublish: (websiteId: string) =>
+    api.post<{ message: string }>(`/versions/${websiteId}/unpublish`),
+  restoreDraft: (websiteId: string, version: number) =>
+    api.post<{ message: string }>(`/versions/${websiteId}/drafts/${version}/restore`),
+  rollback: (websiteId: string, version: number) =>
+    api.post<{ message: string; version: number }>(`/versions/${websiteId}/published/${version}/rollback`),
+}
+
+export type { DraftVersion, PublishedVersion }

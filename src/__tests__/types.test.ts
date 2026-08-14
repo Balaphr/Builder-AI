@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import type { Website, Page, User, Product, BlogPost } from '@/types'
+import type { Website, Page, Product } from '@/types'
 
 describe('Type Definitions', () => {
   it('Website type has required fields', () => {

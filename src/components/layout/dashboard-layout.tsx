@@ -10,25 +10,46 @@ import {
   LayoutDashboard, Globe, Sparkles, MessageSquare, LayoutTemplate,
   Image, BarChart3, Globe2, HardDrive, Zap, Users, CreditCard,
   Settings, ChevronLeft, ChevronRight, LogOut, Moon, Sun,
-  FileText, ShoppingBag, Shield, Menu, X
+  FileText, ShoppingBag, Shield, Menu, X, Search, Bot, Plus,
+  FileBarChart, ShieldCheck
 } from 'lucide-react'
 
-const navItems = [
-  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'My Websites', href: '/dashboard/websites', icon: Globe },
-  { label: 'AI Builder', href: '/dashboard/builder', icon: Sparkles },
-  { label: 'AI Chat', href: '/dashboard/builder/new/chat', icon: MessageSquare },
-  { label: 'Templates', href: '/dashboard/templates', icon: LayoutTemplate },
-  { label: 'Media Library', href: '/dashboard/media', icon: Image },
-  { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-  { label: 'Domains', href: '/dashboard/domains', icon: Globe2 },
-  { label: 'Storage', href: '/dashboard/media', icon: HardDrive },
-  { label: 'Automation', href: '/dashboard/automation', icon: Zap },
-  { label: 'Blog', href: '/dashboard/blog', icon: FileText },
-  { label: 'E-Commerce', href: '/dashboard/ecommerce', icon: ShoppingBag },
-  { label: 'Team Members', href: '/dashboard/team', icon: Users },
-  { label: 'Billing', href: '/dashboard/billing', icon: CreditCard },
-  { label: 'Settings', href: '/dashboard/settings', icon: Settings },
+const navGroups: { label: string; items: { label: string; href: string; icon: typeof LayoutDashboard }[] }[] = [
+  {
+    label: 'Build',
+    items: [
+      { label: 'Website Create', href: '/dashboard/create', icon: Plus },
+      { label: 'Website Builder', href: '/dashboard/builder', icon: Sparkles },
+      { label: 'My Websites', href: '/dashboard/websites', icon: Globe },
+      { label: 'Templates', href: '/dashboard/templates', icon: LayoutTemplate },
+    ],
+  },
+  {
+    label: 'AI',
+    items: [
+      { label: 'Global Search AI', href: '/dashboard/search', icon: Search },
+      { label: 'Assist AI', href: '/dashboard/assist', icon: Bot },
+      { label: 'AI Chat', href: '/dashboard/builder/new/chat', icon: MessageSquare },
+    ],
+  },
+  {
+    label: 'Manage',
+    items: [
+      { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+      { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+      { label: 'Reports', href: '/dashboard/reports', icon: FileBarChart },
+      { label: 'Media Library', href: '/dashboard/media', icon: Image },
+      { label: 'Domains', href: '/dashboard/domains', icon: Globe2 },
+      { label: 'Storage', href: '/dashboard/media', icon: HardDrive },
+      { label: 'Automation', href: '/dashboard/automation', icon: Zap },
+      { label: 'Blog', href: '/dashboard/blog', icon: FileText },
+      { label: 'E-Commerce', href: '/dashboard/ecommerce', icon: ShoppingBag },
+      { label: 'Team Members', href: '/dashboard/team', icon: Users },
+      { label: 'Billing', href: '/dashboard/billing', icon: CreditCard },
+      { label: 'Accounts', href: '/dashboard/accounts', icon: ShieldCheck },
+      { label: 'Settings', href: '/dashboard/settings', icon: Settings },
+    ],
+  },
 ]
 
 const bottomNavItems = [
@@ -51,18 +72,18 @@ export function DashboardLayout() {
       {/* Logo */}
       <div className="h-16 flex items-center justify-between px-4 border-b">
         {!collapsed && (
-          <Link to="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center">
+          <Link to="/dashboard" className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center shrink-0">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold">AI Builder</span>
+            <span className="font-bold truncate">AI Website Builder</span>
           </Link>
         )}
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setCollapsed(!collapsed)}
-          className="hidden md:flex"
+          className="hidden md:flex shrink-0"
         >
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </Button>
@@ -70,30 +91,39 @@ export function DashboardLayout() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-2 scrollbar-thin">
-        <div className="space-y-1">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.href ||
-              (item.href !== '/dashboard' && location.pathname.startsWith(item.href))
-            return (
-              <Link
-                key={item.href}
-                to={item.href}
-                onClick={() => setMobileOpen(false)}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                  collapsed && 'justify-center px-2'
-                )}
-                title={collapsed ? item.label : undefined}
-              >
-                <item.icon className="w-5 h-5 shrink-0" />
-                {!collapsed && <span>{item.label}</span>}
-              </Link>
-            )
-          })}
-        </div>
+        {navGroups.map((group) => (
+          <div key={group.label} className="mb-4">
+            {!collapsed && (
+              <p className="px-3 mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {group.label}
+              </p>
+            )}
+            <div className="space-y-1">
+              {group.items.map((item) => {
+                const isActive = location.pathname === item.href ||
+                  (item.href !== '/dashboard' && location.pathname.startsWith(item.href))
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                      collapsed && 'justify-center px-2'
+                    )}
+                    title={collapsed ? item.label : undefined}
+                  >
+                    <item.icon className="w-5 h-5 shrink-0" />
+                    {!collapsed && <span className="truncate">{item.label}</span>}
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        ))}
 
         {/* Admin items */}
         {user?.role === 'admin' && (
@@ -157,7 +187,7 @@ export function DashboardLayout() {
           <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
-          <span className="font-bold">AI Builder</span>
+          <span className="font-bold">AI Website Builder</span>
         </Link>
         <Button
           variant="ghost"

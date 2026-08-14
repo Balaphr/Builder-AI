@@ -40,15 +40,15 @@ auth.post('/register', zValidator('json', registerSchema), async (c) => {
 
   await db
     .prepare(
-      'INSERT INTO users (id, email, name, password_hash, role, plan, ai_credits) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO users (id, email, name, password_hash, role, plan, ai_credits, account_type, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
     )
-    .bind(id, email, name, passwordHash, 'user', 'free', 100)
+    .bind(id, email, name, passwordHash, 'user', 'free', 100, 'custom', 0)
     .run()
 
   const token = await generateJWT({ sub: id, email, name, role: 'user', plan: 'free' }, c.env.JWT_SECRET)
 
   return c.json({
-    user: { id, email, name, role: 'user', plan: 'free', aiCredits: 100, storageUsed: 0 },
+    user: { id, email, name, role: 'user', plan: 'free', accountType: 'custom', aiCredits: 100, storageUsed: 0 },
     token,
   })
 })
@@ -64,6 +64,10 @@ auth.post('/login', zValidator('json', loginSchema), async (c) => {
 
   if (!user) {
     return c.json({ message: 'Invalid credentials' }, 401)
+  }
+
+  if ((user.is_disabled as number) === 1) {
+    return c.json({ message: 'This account has been disabled' }, 403)
   }
 
   if (user.password_hash) {
@@ -89,6 +93,10 @@ auth.post('/login', zValidator('json', loginSchema), async (c) => {
     c.env.JWT_SECRET
   )
 
+  let permissions: string[] = []
+  try { permissions = JSON.parse((user.permissions as string) || '[]') } catch { permissions = [] }
+  if (user.role === 'admin') permissions = ['*']
+
   return c.json({
     user: {
       id: user.id,
@@ -96,6 +104,8 @@ auth.post('/login', zValidator('json', loginSchema), async (c) => {
       name: user.name,
       role: user.role,
       plan: user.plan,
+      accountType: user.account_type,
+      permissions,
       aiCredits: user.ai_credits,
       storageUsed: user.storage_used,
       avatar: user.avatar,
@@ -163,6 +173,7 @@ auth.post('/otp/verify', zValidator('json', verifyOtpSchema), async (c) => {
       name: user.name,
       role: user.role,
       plan: user.plan,
+      accountType: user.account_type,
       aiCredits: user.ai_credits,
       storageUsed: user.storage_used,
     },
@@ -332,6 +343,10 @@ auth.get('/me', async (c) => {
     return c.json({ message: 'User not found' }, 404)
   }
 
+  let permissions: string[] = []
+  try { permissions = JSON.parse((user.permissions as string) || '[]') } catch { permissions = [] }
+  if (user.role === 'admin') permissions = ['*']
+
   return c.json({
     user: {
       id: user.id,
@@ -339,6 +354,9 @@ auth.get('/me', async (c) => {
       name: user.name,
       role: user.role,
       plan: user.plan,
+      accountType: user.account_type,
+      isDisabled: user.is_disabled === 1,
+      permissions,
       aiCredits: user.ai_credits,
       storageUsed: user.storage_used,
       avatar: user.avatar,

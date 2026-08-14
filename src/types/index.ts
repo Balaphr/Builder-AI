@@ -5,6 +5,9 @@ export interface User {
   avatar?: string
   role: 'admin' | 'user' | 'editor'
   plan: 'free' | 'pro' | 'business' | 'enterprise'
+  accountType?: AccountType
+  permissions?: string[]
+  isDisabled?: boolean
   aiCredits: number
   storageUsed: number
   createdAt: string
@@ -389,4 +392,86 @@ export interface AIImageRequest {
 export interface AIImageResponse {
   url: string
   revisedPrompt?: string
+}
+
+export type AccountType = 'admin' | 'sub' | 'test' | 'custom'
+
+export interface UserAccount {
+  id: string
+  email: string
+  name: string
+  role: string
+  plan: string
+  accountType: AccountType
+  isDisabled: boolean
+  permissions: string[]
+  aiCredits?: number
+  createdBy?: string
+  createdAt?: string
+  lastLoginAt?: string
+  websites: { websiteId: string; title?: string; slug?: string; status?: string; permissions: string[] }[]
+}
+
+export interface Permission {
+  id: string
+  category: string
+  key: string
+  name: string
+  description?: string
+}
+
+export interface Role {
+  id: string
+  name: string
+  key: string
+  isSystem: boolean
+  permissions: string[]
+}
+
+export type PageStatus = 'draft' | 'published' | 'unpublished' | 'modified'
+export type PageVisibility = 'public' | 'private' | 'password'
+
+export interface SearchResult {
+  id: string
+  type: string
+  title: string
+  subtitle: string
+  snippet: string
+  score: number
+  meta: Record<string, unknown>
+  href: string
+}
+
+export interface SearchGroup {
+  type: string
+  count: number
+  items: SearchResult[]
+}
+
+export interface SearchResponse {
+  query: string
+  total: number
+  results: SearchResult[]
+  groups: SearchGroup[]
+}
+
+export interface DraftVersion {
+  id: string
+  version: number
+  label: string
+  createdBy: string
+  createdAt: string
+}
+
+export interface PublishedVersion {
+  id: string
+  version: number
+  status: 'active' | 'superseded' | 'rolled_back'
+  publishedBy: string
+  publishedAt: string
+}
+
+export interface VersionListResponse {
+  published: PublishedVersion[]
+  drafts: DraftVersion[]
 }

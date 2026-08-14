@@ -1,33 +1,38 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api, mediaUrl } from '@/lib/api'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { formatBytes, formatDate } from '@/lib/utils'
 import { toast } from '@/components/ui/toast'
 import {
-  Image, Upload, Search, FolderOpen, Trash2,
-  Eye, Download, Grid3X3, List, Filter
+  Image, Upload, Search, Trash2,
+  Eye, Grid3X3, List
 } from 'lucide-react'
 
+interface MediaFile {
+  id: string
+  name: string
+  url: string
+  type: string
+  size: number
+  created_at: string
+}
+
 export function MediaPage() {
-  const [files, setFiles] = useState<any[]>([])
+  const [files, setFiles] = useState<MediaFile[]>([])
   const [search, setSearch] = useState('')
   const [view, setView] = useState<'grid' | 'list'>('grid')
   const [isUploading, setIsUploading] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => { loadFiles() }, [])
 
   const loadFiles = async () => {
     try {
-      const { files } = await api.get<{ files: any[] }>('/media')
+      const { files } = await api.get<{ files: MediaFile[] }>('/media')
       setFiles(files)
     } catch (err) {
       console.error(err)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -42,7 +47,7 @@ export function MediaPage() {
       }
       toast.success('Files uploaded!')
       loadFiles()
-    } catch (err) {
+    } catch {
       toast.error('Upload failed')
     } finally {
       setIsUploading(false)
@@ -55,7 +60,7 @@ export function MediaPage() {
       await api.delete(`/media/${id}`)
       setFiles((f) => f.filter((file) => file.id !== id))
       toast.success('File deleted')
-    } catch (err) {
+    } catch {
       toast.error('Delete failed')
     }
   }

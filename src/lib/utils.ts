@@ -38,6 +38,7 @@ export function slugify(text: string): string {
     .toLowerCase()
     .replace(/[^\w ]+/g, '')
     .replace(/ +/g, '-')
+    .replace(/^-+|-+$/g, '')
 }
 
 export function truncate(text: string, length: number): string {

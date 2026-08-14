@@ -2,7 +2,6 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import type { Env } from '../types'
-import { generateId, slugify } from '../utils'
 
 const ai = new Hono<{ Bindings: Env }>()
 
@@ -554,7 +553,7 @@ Be thorough and accurate with the plan. Include all necessary pages for the plat
 
 // Generate website from prompt
 ai.post('/generate-website', zValidator('json', generateWebsiteSchema), async (c) => {
-  const { prompt, templateId } = c.req.valid('json')
+  const { prompt } = c.req.valid('json')
 
   const systemPrompt = `You are an expert website designer and developer. Generate a complete website based on the user's prompt.
 
@@ -918,7 +917,7 @@ ai.post('/generate-palette', async (c) => {
     }
 
     return c.json({ palette })
-  } catch (error) {
+  } catch {
     return c.json({ message: 'Failed to generate palette' }, 500)
   }
 })

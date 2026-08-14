@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Check, Settings, Package } from 'lucide-react'
+import { Check, Settings } from 'lucide-react'
 import { MODULE_DEFINITIONS, getWebsiteType, type WebsiteType } from '@/lib/website-types'
 import * as LucideIcons from 'lucide-react'
 
@@ -42,7 +41,7 @@ export function ModulePicker({ websiteType, initialModules = [], onChange, disab
   }
 
   const getIcon = (iconName: string) => {
-    const Icon = (LucideIcons as Record<string, React.ComponentType<any>>)[iconName]
+    const Icon = (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>>)[iconName]
     return Icon || LucideIcons.Box
   }
 
